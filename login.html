@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Masuk · Ledgerine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<style>
+  .login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;
+    background:radial-gradient(circle at 50% -20%,#e8edf3,transparent 60%),var(--bg)}
+  .login-card{width:100%;max-width:390px;background:var(--surface);border:1px solid var(--border);
+    border-radius:16px;box-shadow:var(--shadow-lg);padding:32px}
+  .login-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;
+    letter-spacing:-.02em;justify-content:center;margin-bottom:4px}
+  .login-brand .brand-dot{width:28px;height:28px;font-size:15px}
+  .login-sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:26px}
+  .login-card .label{margin-top:14px}
+  .hint{margin-top:20px;padding:11px 13px;background:#F9FAFB;border:1px solid var(--border);
+    border-radius:10px;font-size:12px;color:var(--muted);line-height:1.7}
+  .err-box{background:var(--red-bg);color:var(--red);border:1px solid #FCA5A5;
+    border-radius:10px;padding:10px 13px;font-size:13px;margin-top:14px;display:none}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand"><span class="brand-dot">L</span> Ledgerine</div>
+    <div class="login-sub">Generator Faktur &amp; Kwitansi</div>
+
+    <label class="label">Username</label>
+    <input id="u" class="field" placeholder="username" autocomplete="username">
+    <label class="label">Password</label>
+    <input id="p" type="password" class="field" placeholder="••••••••" autocomplete="current-password">
+
+    <div class="err-box" id="err"></div>
+
+    <button class="btn btn-primary btn-block mt-4" id="loginBtn" style="margin-top:18px">Masuk</button>
+
+    <div class="hint">
+      <strong>Akun default</strong><br>
+      admin / admin123 &nbsp;·&nbsp; staff / staff123<br>
+      Ubah lewat menu Pengguna setelah masuk.
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script>
+  if(Auth.get()) location.href='dashboard.html';
+  const errBox=document.getElementById('err');
+  const uEl=document.getElementById('u'), pEl=document.getElementById('p'), loginBtn=document.getElementById('loginBtn');
+
+  function showErr(m){ errBox.textContent=m; errBox.style.display='block'; }
+
+  async function doLogin(){
+    errBox.style.display='none';
+    const username=uEl.value.trim(), password=pEl.value;
+    if(!username||!password){ showErr('Isi username dan password.'); return; }
+    loginBtn.disabled=true; loginBtn.innerHTML='<span class="spinner"></span> Memeriksa...';
+    try{
+      const r=await API.login(username,password);
+      Auth.set(r.user);
+      location.href='dashboard.html';
+    }catch(e){
+      showErr(e.message);
+      loginBtn.disabled=false; loginBtn.textContent='Masuk';
+    }
+  }
+  loginBtn.onclick=doLogin;
+  [uEl,pEl].forEach(el=>el.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); }));
+</script>
+</body>
+</html>

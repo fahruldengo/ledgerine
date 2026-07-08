@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pengguna · Ledgerine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/crud.js"></script>
+<script>
+(function(){
+  const u=Auth.get();
+  if(u && u.role!=='admin'){ document.body.innerHTML=''; location.href='dashboard.html'; return; }
+  crudPage({
+    active:'users.html', sheet:'Users',
+    title:'Pengguna', subtitle:'Kelola akun & hak akses (khusus admin)',
+    addLabel:'Tambah Pengguna', editLabel:'Ubah Pengguna', nameKey:'nama',
+    createdMsg:'Pengguna ditambahkan', savedMsg:'Pengguna diperbarui',
+    fields:[
+      {key:'nama',label:'Nama Lengkap',ph:'Nama pengguna'},
+      {key:'username',label:'Username',ph:'username login'},
+      {key:'password',label:'Password',ph:'password login'},
+      {key:'role',label:'Role',type:'select',options:[{v:'staff',t:'Staff'},{v:'admin',t:'Admin'}],default:'staff'},
+      {key:'aktif',label:'Status',type:'select',options:[{v:'YA',t:'Aktif'},{v:'TIDAK',t:'Nonaktif'}],default:'YA'}
+    ],
+    columns:[
+      {key:'nama',label:'Nama'},
+      {key:'username',label:'Username'},
+      {label:'Role',render:r=>`<span class="badge badge-role">${esc(r.role)}</span>`},
+      {label:'Status',render:r=>String(r.aktif).toUpperCase()==='YA'
+        ?'<span class="badge badge-green">Aktif</span>':'<span class="badge badge-red">Nonaktif</span>'}
+    ],
+    validate:(d,editing,rows)=>{
+      if(!d.nama) return 'Nama wajib diisi';
+      if(!d.username) return 'Username wajib diisi';
+      if(!d.password) return 'Password wajib diisi';
+      const dup=rows.find(r=>String(r.username).toLowerCase()===d.username.toLowerCase() && (!editing||r.id!==editing.id));
+      if(dup) return 'Username sudah dipakai';
+      return null;
+    },
+    sortBy:(a,b)=>String(a.nama).localeCompare(b.nama)
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pelanggan · Ledgerine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/crud.js"></script>
+<script>
+crudPage({
+  active:'customers.html', sheet:'Customers',
+  title:'Pelanggan', subtitle:'Data pelanggan untuk auto-isi faktur & kwitansi',
+  addLabel:'Tambah Pelanggan', editLabel:'Ubah Pelanggan', nameKey:'nama',
+  createdMsg:'Pelanggan ditambahkan', savedMsg:'Pelanggan diperbarui',
+  fields:[
+    {key:'nama',label:'Nama',ph:'Nama pelanggan / perusahaan'},
+    {key:'alamat',label:'Alamat',type:'textarea',ph:'Alamat lengkap'},
+    {key:'telepon',label:'Telepon',ph:'08xx / 0435xx'},
+    {key:'email',label:'Email',type:'email',ph:'nama@email.com'}
+  ],
+  columns:[
+    {key:'nama',label:'Nama'},
+    {key:'telepon',label:'Telepon'},
+    {key:'email',label:'Email'},
+    {label:'Alamat',render:r=>esc((r.alamat||'').slice(0,40))+((r.alamat||'').length>40?'…':'')}
+  ],
+  validate:(d)=>!d.nama?'Nama wajib diisi':null,
+  beforeCreate:(d)=>{ d.createdAt=new Date().toISOString(); },
+  sortBy:(a,b)=>String(a.nama).localeCompare(b.nama)
+});
+</script>
+</body>
+</html>

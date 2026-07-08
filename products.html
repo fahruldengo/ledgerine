@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barang · Ledgerine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/crud.js"></script>
+<script>
+crudPage({
+  active:'products.html', sheet:'Products',
+  title:'Barang / Jasa', subtitle:'Master data barang untuk item faktur',
+  addLabel:'Tambah Barang', editLabel:'Ubah Barang', nameKey:'nama',
+  createdMsg:'Barang ditambahkan', savedMsg:'Barang diperbarui',
+  fields:[
+    {key:'nama',label:'Nama Barang / Jasa',ph:'contoh: Jasa Instalasi'},
+    {key:'satuan',label:'Satuan',ph:'pcs / unit / paket',default:'pcs'},
+    {key:'harga',label:'Harga Satuan (angka)',type:'number',ph:'0'}
+  ],
+  columns:[
+    {key:'nama',label:'Nama'},
+    {key:'satuan',label:'Satuan'},
+    {label:'Harga',right:true,render:r=>Fmt.currency(r.harga)}
+  ],
+  validate:(d)=>{ if(!d.nama) return 'Nama wajib diisi'; if(d.harga===''||isNaN(d.harga)) return 'Harga harus angka'; return null; },
+  beforeCreate:(d)=>{ d.createdAt=new Date().toISOString(); },
+  sortBy:(a,b)=>String(a.nama).localeCompare(b.nama)
+});
+</script>
+</body>
+</html>

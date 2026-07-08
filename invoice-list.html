@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daftar Faktur · Ledgerine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/doclist.js"></script>
+<script>
+docListPage({
+  active:'invoices.html', sheet:'Invoices',
+  title:'Daftar Faktur', subtitle:'Faktur tersimpan di Google Sheets',
+  newLabel:'Faktur Baru', editorPage:'invoices.html', editKey:'ledgerine_edit_invoice',
+  columns:[
+    {key:'nomor',label:'Nomor'},
+    {label:'Pelanggan',render:r=>{ try{ return esc(JSON.parse(r.customerSnapshot||'{}').nama||'-'); }catch(e){ return '-'; } }},
+    {label:'Tanggal',render:r=>Fmt.date(r.tanggal)},
+    {label:'Status',render:r=>r.status==='PAID'?'<span class="badge badge-green">Lunas</span>':'<span class="badge badge-red">Belum Bayar</span>'},
+    {label:'Total',right:true,render:r=>Fmt.currency(r.total,r.mataUang)}
+  ]
+});
+</script>
+</body>
+</html>
