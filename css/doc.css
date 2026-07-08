@@ -1,0 +1,113 @@
+/* ===== A4 document (invoice + kwitansi) ===== */
+.editor-layout{display:grid;grid-template-columns:420px 1fr;gap:24px;align-items:start}
+.editor-col{position:sticky;top:86px;max-height:calc(100vh - 110px);overflow-y:auto;
+  padding-right:6px;display:flex;flex-direction:column;gap:18px}
+.editor-col::-webkit-scrollbar{width:8px}
+.editor-col::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:8px}
+.preview-col{display:flex;justify-content:center;padding-bottom:40px}
+
+.ed-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.ed-section > .sec-title{font-size:12px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px}
+.ed-row{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+.ed-row:last-child{margin-bottom:0}
+
+/* dropzone */
+.dropzone{border:2px dashed var(--border);border-radius:var(--radius);padding:22px;text-align:center;
+  cursor:pointer;color:var(--muted);transition:border-color var(--t),background var(--t)}
+.dropzone:hover{border-color:var(--accent);background:#F8FAFC}
+.dropzone.has{padding:12px}
+.dropzone img{max-height:70px;max-width:100%;object-fit:contain}
+.logo-actions{display:flex;gap:8px;margin-top:10px}
+
+/* line items editor */
+.li-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.li-table th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;padding:0 5px 6px}
+.li-table td{padding:3px 4px;vertical-align:top}
+.li-table input{padding:7px 8px;font-size:12.5px}
+.li-input-desc{width:100%}
+.li-del{color:var(--red);cursor:pointer;background:none;border:none;padding:6px;border-radius:6px;line-height:0}
+.li-del:hover{background:var(--red-bg)}
+.add-line{margin-top:8px}
+
+/* ===== A4 SHEET ===== */
+.a4{width:794px;min-height:1123px;background:#fff;box-shadow:var(--shadow-lg);
+  border-radius:2px;padding:56px 56px 48px;color:#1a1a1a;font-size:13px;line-height:1.55;
+  position:relative;display:flex;flex-direction:column}
+.a4 *{box-sizing:border-box}
+
+.doc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:36px}
+.doc-logo{max-height:76px;max-width:230px;object-fit:contain}
+.doc-logo-empty{font-size:22px;font-weight:700;color:#1E3A5F;letter-spacing:-.01em}
+.doc-title-block{text-align:right}
+.doc-title{font-size:30px;font-weight:700;letter-spacing:-.02em;color:#1E3A5F;line-height:1}
+.doc-number{margin-top:8px;font-size:13px;color:#555;font-variant-numeric:tabular-nums}
+.doc-status{margin-top:12px;display:inline-flex;align-items:center;gap:6px;padding:5px 13px;
+  border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.02em}
+.st-paid{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0}
+.st-unpaid{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
+
+.doc-parties{display:flex;justify-content:space-between;gap:40px;margin-bottom:34px}
+.party{flex:1;min-width:0}
+.party .cap{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+.party .nm{font-weight:600;font-size:14px;margin-bottom:3px;color:#1a1a1a}
+.party .ln{color:#555;font-size:12.5px;white-space:pre-line}
+.doc-meta{text-align:right;flex-shrink:0}
+.doc-meta .mrow{display:flex;justify-content:space-between;gap:26px;margin-bottom:5px;font-size:12.5px}
+.doc-meta .mrow .k{color:#888}
+.doc-meta .mrow .v{font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums}
+
+table.doc-items{width:100%;border-collapse:collapse;margin-bottom:22px}
+table.doc-items thead th{background:#1E3A5F;color:#fff;padding:11px 12px;font-size:11.5px;
+  font-weight:600;text-align:left;letter-spacing:.02em}
+table.doc-items thead th:first-child{border-radius:6px 0 0 6px}
+table.doc-items thead th:last-child{border-radius:0 6px 6px 0}
+table.doc-items th.r,table.doc-items td.r{text-align:right}
+table.doc-items th.c,table.doc-items td.c{text-align:center}
+table.doc-items tbody td{padding:11px 12px;border-bottom:1px solid #EEE;font-size:12.5px;
+  color:#333;font-variant-numeric:tabular-nums;vertical-align:top}
+table.doc-items tbody tr:last-child td{border-bottom:1px solid #DDD}
+.it-desc{font-weight:500;color:#1a1a1a}
+
+.doc-bottom{display:flex;justify-content:space-between;gap:40px;margin-top:4px}
+.doc-notes{flex:1;font-size:12px;color:#555}
+.doc-notes .cap{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.doc-notes .terbilang{margin-top:16px;font-style:italic;color:#444;padding:10px 12px;
+  background:#F8FAFC;border-left:3px solid #1E3A5F;border-radius:0 6px 6px 0}
+.doc-summary{width:270px;flex-shrink:0}
+.sum-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;color:#444;
+  font-variant-numeric:tabular-nums}
+.sum-row.sub{border-bottom:1px solid #EEE}
+.sum-total{display:flex;justify-content:space-between;padding:13px 14px;margin-top:8px;
+  background:#1E3A5F;color:#fff;border-radius:8px;font-weight:700;font-size:15px;
+  font-variant-numeric:tabular-nums}
+
+.doc-foot{margin-top:auto;padding-top:30px;text-align:center;color:#999;font-size:11px}
+.doc-foot .line{border-top:1px solid #EEE;padding-top:14px}
+
+/* kwitansi specific */
+.kw-body{margin:20px 0 30px}
+.kw-field{display:flex;gap:16px;padding:12px 0;border-bottom:1px solid #EEE;align-items:baseline}
+.kw-field .k{width:150px;flex-shrink:0;color:#888;font-size:12.5px}
+.kw-field .v{flex:1;font-weight:600;color:#1a1a1a;font-size:14px}
+.kw-amount-box{margin-top:26px;display:inline-block;padding:14px 26px;border:2px solid #1E3A5F;
+  border-radius:10px;background:#F8FAFC}
+.kw-amount-box .lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em}
+.kw-amount-box .amt{font-size:26px;font-weight:700;color:#1E3A5F;font-variant-numeric:tabular-nums}
+.kw-terbilang{margin-top:14px;font-style:italic;color:#444;padding:10px 14px;background:#F8FAFC;
+  border-left:3px solid #1E3A5F;border-radius:0 6px 6px 0;font-size:13px}
+.kw-sign{margin-top:44px;display:flex;justify-content:flex-end}
+.kw-sign .box{text-align:center;min-width:210px}
+.kw-sign .place{font-size:12.5px;color:#555;margin-bottom:60px}
+.kw-sign .name{font-weight:600;border-top:1px solid #333;padding-top:6px}
+
+@media(max-width:1180px){
+  .editor-layout{grid-template-columns:1fr}
+  .editor-col{position:static;max-height:none;overflow:visible}
+  .a4{transform-origin:top center}
+}
+@media(max-width:860px){
+  .a4{width:100%;min-height:auto;padding:32px 26px}
+  .doc-parties,.doc-bottom{flex-direction:column;gap:20px}
+  .doc-summary{width:100%}
+}
