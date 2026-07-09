@@ -406,16 +406,18 @@
     const orig=btn.innerHTML;
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Generating PDF...';
     try{
-      const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
-      const img=canvas.toDataURL('image/jpeg',0.95);
+      const scale = Math.min(3, (window.devicePixelRatio||1) * 2.5);
+      const canvas=await html2canvas(el,{scale:scale,useCORS:true,backgroundColor:'#ffffff',
+        logging:false, imageTimeout:0, letterRendering:true});
+      const img=canvas.toDataURL('image/png');
       const { jsPDF }=window.jspdf;
-      const pdf=new jsPDF('p','mm','a4');
+      const pdf=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
       const pw=210, ph=297;
       const iw=pw, ih=canvas.height*pw/canvas.width;
       let left=ih, pos=0;
-      pdf.addImage(img,'JPEG',0,pos,iw,ih);
+      pdf.addImage(img,'PNG',0,pos,iw,ih,undefined,'FAST');
       left-=ph;
-      while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,'JPEG',0,pos,iw,ih); left-=ph; }
+      while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,'PNG',0,pos,iw,ih,undefined,'FAST'); left-=ph; }
       pdf.save((state.nomor||'invoice').replace(/[\/\\]/g,'-')+'.pdf');
       btn.innerHTML='Downloaded ✓';
       setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },1800);

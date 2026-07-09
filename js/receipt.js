@@ -7,7 +7,7 @@
     logo:'', nomor:'', mataUang:'IDR', tanggal:Fmt.dateInput(),
     seller:{nama:'',alamat:'',telepon:'',email:''},
     customerId:'', customer:{nama:'',alamat:'',telepon:'',email:''},
-    sudahTerima:'',
+    sudahTerima:'', untukPembayaran:'',
     lines:[],            // {invoiceId, invoiceNomor, desc, nilai}
     catatan:'', ttdNama:'', ttdJabatan:'', tempat:'Gorontalo',
     metodeBayar:'Transfer', bankId:'', bank:null,
@@ -113,6 +113,8 @@
           <input class="field" data-b="sudahTerima" value="${esc(state.sudahTerima)}" placeholder="Nama pihak yang membayar"></div>
         <div class="ed-row"><label class="label">Alamat pembayar</label>
           <textarea class="field" data-c="alamat">${esc(state.customer.alamat)}</textarea></div>
+        <div class="ed-row"><label class="label">Untuk pembayaran</label>
+          <input class="field" data-b="untukPembayaran" value="${esc(state.untukPembayaran)}" placeholder="contoh: Pelunasan tagihan iklan Januari 2026"></div>
       </div>
 
       <div class="ed-section">
@@ -320,7 +322,7 @@
         </div>
       </div>
 
-      <div class="doc-parties">
+      <div class="doc-parties kw-parties">
         <div class="party">
           <div class="cap">Diterima oleh</div>
           <div class="nm">${esc(state.seller.nama||'Nama Bisnis')}</div>
@@ -333,10 +335,9 @@
           <div class="ln">${esc(state.customer.alamat||'')}</div>
           <div class="ln">${[state.customer.telepon,state.customer.email].filter(Boolean).map(esc).join(' · ')}</div>
         </div>
-        <div class="doc-meta">
-          <div class="mrow"><span class="k">Tanggal</span><span class="v">${Fmt.date(state.tanggal)}</span></div>
-        </div>
       </div>
+
+      ${state.untukPembayaran?`<div class="kw-untuk"><span class="cap">Untuk pembayaran</span> ${esc(state.untukPembayaran)}</div>`:''}
 
       <table class="doc-items">
         <thead><tr><th>Deskripsi</th><th class="r">Jumlah</th></tr></thead>
@@ -350,7 +351,7 @@
           ${paymentBlock()}
         </div>
         <div class="doc-summary">
-          <div class="sum-total"><span>Total Pembayaran</span><span>${Fmt.currency(total,cur)}</span></div>
+          <div class="sum-total stack"><span>Total Pembayaran</span><span>${Fmt.currency(total,cur)}</span></div>
         </div>
       </div>
 
@@ -364,12 +365,14 @@
     const btn=editor.querySelector('#pdfBtn'), el=document.getElementById('a4sheet'), orig=btn.innerHTML;
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Generating PDF...';
     try{
-      const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
-      const img=canvas.toDataURL('image/jpeg',0.95);
-      const { jsPDF }=window.jspdf; const pdf=new jsPDF('p','mm','a4');
+      const scale = Math.min(3, (window.devicePixelRatio||1) * 2.5);
+      const canvas=await html2canvas(el,{scale:scale,useCORS:true,backgroundColor:'#ffffff',
+        logging:false, imageTimeout:0, letterRendering:true});
+      const img=canvas.toDataURL('image/png');
+      const { jsPDF }=window.jspdf; const pdf=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
       const pw=210, ph=297, iw=pw, ih=canvas.height*pw/canvas.width;
-      let left=ih, pos=0; pdf.addImage(img,'JPEG',0,pos,iw,ih); left-=ph;
-      while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,'JPEG',0,pos,iw,ih); left-=ph; }
+      let left=ih, pos=0; pdf.addImage(img,'PNG',0,pos,iw,ih,undefined,'FAST'); left-=ph;
+      while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,'PNG',0,pos,iw,ih,undefined,'FAST'); left-=ph; }
       pdf.save((state.nomor||'kwitansi').replace(/[\/\\]/g,'-')+'.pdf');
       btn.innerHTML='Downloaded ✓'; setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },1800);
     }catch(e){ toast('Gagal membuat PDF. Coba lagi.','err'); btn.innerHTML=orig; btn.disabled=false; }
@@ -386,7 +389,7 @@
     const payload={
       nomor:state.nomor, tanggal:state.tanggal, mataUang:state.mataUang, customerId:state.customerId,
       customerSnapshot:JSON.stringify(state.customer), sellerSnapshot:JSON.stringify(state.seller),
-      sudahTerima:state.sudahTerima, untukPembayaran:'',
+      sudahTerima:state.sudahTerima, untukPembayaran:state.untukPembayaran,
       items:JSON.stringify(state.lines), ppn:0, subtotal:Math.round(total),
       jumlah:Math.round(total), terbilang:terbilangRupiah(total,state.mataUang),
       invoiceRef:state.lines.map(l=>l.invoiceNomor).filter(Boolean).join(', '),
@@ -414,7 +417,7 @@
       state.editId=k.id; state.nomor=k.nomor; state.tanggal=Fmt.dateInput(k.tanggal);
       state.mataUang=k.mataUang||'IDR'; state.customerId=k.customerId||'';
       state.customer=k.customerSnapshot?JSON.parse(k.customerSnapshot):state.customer;
-      state.sudahTerima=k.sudahTerima||'';
+      state.sudahTerima=k.sudahTerima||''; state.untukPembayaran=k.untukPembayaran||'';
       // items lama bisa berformat item {desc,qty,harga}; konversi ke lines {desc,nilai}
       let parsed=[]; try{ parsed=k.items?JSON.parse(k.items):[]; }catch(e){}
       state.lines=parsed.map(x=>{
