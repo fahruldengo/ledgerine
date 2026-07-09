@@ -82,18 +82,35 @@ table.doc-items tbody tr:last-child td{border-bottom:1px solid #DDD}
 .doc-pay .bank-card .br{color:#333;font-variant-numeric:tabular-nums;margin-top:2px}
 .doc-pay .bank-card .an{color:#666;margin-top:1px}
 .doc-summary{width:290px;flex-shrink:0}
-.sum-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13px;color:#444;
+.sum-row{display:flex;justify-content:space-between;gap:12px;padding:7px 16px;font-size:13px;color:#444;
   font-variant-numeric:tabular-nums}
 .sum-row.sub{border-bottom:1px solid #EEE}
 .sum-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
   padding:13px 16px;margin-top:8px;background:#1E3A5F;color:#fff;border-radius:8px;
   font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
 .sum-total > span:first-child{white-space:nowrap;font-size:13px;font-weight:600;opacity:.85}
-.sum-total > span:last-child{text-align:right;font-size:17px;letter-spacing:-.01em}
-/* varian kwitansi: label di atas, nominal besar di bawah — rapi utk angka besar */
-.sum-total.stack{flex-direction:column;align-items:stretch;gap:4px;padding:14px 18px}
-.sum-total.stack > span:first-child{font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-.sum-total.stack > span:last-child{font-size:22px;text-align:right}
+.sum-total > span:last-child{text-align:right;font-size:16px;letter-spacing:-.01em}
+
+/* format accounting (Excel-style): simbol kiri, angka kanan */
+.acc{display:inline-flex;justify-content:space-between;gap:10px;
+  font-variant-numeric:tabular-nums}
+.acc-sym{text-align:left;opacity:.75}
+.acc-num{text-align:right;flex:1}
+td.r .acc,th.r .acc{min-width:120px}
+/* samakan lebar kolom Rp di ringkasan agar sejajar antar baris & total */
+.sum-row .acc,.sum-total > span:last-child .acc{min-width:150px;width:150px}
+.sum-total .acc-sym{opacity:.85}
+
+/* PDF quality selector */
+.pdf-qual{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qual-opt{display:flex;align-items:flex-start;gap:9px;padding:11px 12px;border:1px solid var(--border);
+  border-radius:var(--radius);cursor:pointer;transition:border-color var(--t),background var(--t)}
+.qual-opt:hover{border-color:#C7CED6;background:#FafBfC}
+.qual-opt.on{border-color:var(--accent);background:#F4F7FB}
+.qual-opt input{margin-top:2px;width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.qual-opt span{display:flex;flex-direction:column;line-height:1.35}
+.qual-opt strong{font-size:13px;font-weight:600;color:var(--text)}
+.qual-opt .qd{font-size:11px;color:var(--muted)}
 
 /* kwitansi parties (2 kolom lega, tanpa kolom tanggal) */
 .kw-parties .party{flex:1}
