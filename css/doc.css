@@ -81,13 +81,24 @@ table.doc-items tbody tr:last-child td{border-bottom:1px solid #DDD}
 .doc-pay .bank-card .bn{font-weight:600;color:#1E3A5F}
 .doc-pay .bank-card .br{color:#333;font-variant-numeric:tabular-nums;margin-top:2px}
 .doc-pay .bank-card .an{color:#666;margin-top:1px}
-.doc-summary{width:270px;flex-shrink:0}
-.sum-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;color:#444;
+.doc-summary{width:290px;flex-shrink:0}
+.sum-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13px;color:#444;
   font-variant-numeric:tabular-nums}
 .sum-row.sub{border-bottom:1px solid #EEE}
-.sum-total{display:flex;justify-content:space-between;padding:13px 14px;margin-top:8px;
-  background:#1E3A5F;color:#fff;border-radius:8px;font-weight:700;font-size:15px;
-  font-variant-numeric:tabular-nums}
+.sum-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:13px 16px;margin-top:8px;background:#1E3A5F;color:#fff;border-radius:8px;
+  font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.sum-total > span:first-child{white-space:nowrap;font-size:13px;font-weight:600;opacity:.85}
+.sum-total > span:last-child{text-align:right;font-size:17px;letter-spacing:-.01em}
+/* varian kwitansi: label di atas, nominal besar di bawah — rapi utk angka besar */
+.sum-total.stack{flex-direction:column;align-items:stretch;gap:4px;padding:14px 18px}
+.sum-total.stack > span:first-child{font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.sum-total.stack > span:last-child{font-size:22px;text-align:right}
+
+/* kwitansi parties (2 kolom lega, tanpa kolom tanggal) */
+.kw-parties .party{flex:1}
+.kw-untuk{margin:2px 0 20px;font-size:13px;color:#333}
+.kw-untuk .cap{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-right:6px}
 
 /* invoice checklist (kwitansi) */
 .inv-check{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border);
