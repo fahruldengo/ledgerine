@@ -89,6 +89,16 @@ table.doc-items tbody tr:last-child td{border-bottom:1px solid #DDD}
   background:#1E3A5F;color:#fff;border-radius:8px;font-weight:700;font-size:15px;
   font-variant-numeric:tabular-nums}
 
+/* invoice checklist (kwitansi) */
+.inv-check{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:border-color var(--t),background var(--t)}
+.inv-check:hover{border-color:#C7CED6;background:#FafBfC}
+.inv-check.on{border-color:var(--accent);background:#F4F7FB}
+.inv-check input{margin-top:2px;width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.inv-check .ic-body{display:flex;flex-direction:column;min-width:0}
+.inv-check .ic-nom{font-weight:600;font-size:13px;color:var(--text)}
+.inv-check .ic-meta{font-size:12px;color:var(--muted)}
+
 /* signature block (shared invoice + kwitansi) */
 .doc-sign{display:flex;justify-content:flex-end;margin-top:34px}
 .doc-sign .box{text-align:center;min-width:230px}
