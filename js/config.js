@@ -1,5 +1,5 @@
 // ============================================================
-//  KONFIGURASI — EDIT FILE INI LANGSUNG DI GITHUB
+//  KONFIGURASI — EDIT FILE INI LANGSUNG DI GITHUB 
 //  Jangan timpa file ini dari paket ZIP mana pun.
 //  Tempel URL Web App (/exec) hasil deploy Apps Script di bawah.
 // ============================================================
