@@ -141,7 +141,12 @@ function buildLayout(active){
     </aside>
     <div class="main">
       <div class="topbar">
-        <strong>${esc(NAV.find(n=>n[0]===active)?.[1]||'Ledgerine')}</strong>
+        <div class="flex items-center gap">
+          <button class="btn btn-ghost btn-sm sidebar-toggle" id="sidebarToggle" title="Sembunyikan/tampilkan menu" aria-label="Toggle menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <strong>${esc(NAV.find(n=>n[0]===active)?.[1]||'Ledgerine')}</strong>
+        </div>
         <span class="badge badge-role">${esc(u.role)}</span>
       </div>
       <div class="content" id="content"></div>
@@ -149,5 +154,32 @@ function buildLayout(active){
   document.body.innerHTML='';
   document.body.appendChild(shell);
   document.getElementById('logoutBtn').onclick = ()=>Auth.logout();
+
+  // backdrop untuk mode mobile
+  const backdrop=document.createElement('div');
+  backdrop.className='sidebar-backdrop';
+  shell.appendChild(backdrop);
+
+  const isMobile = ()=>window.matchMedia('(max-width:900px)').matches;
+
+  // desktop: collapse (persist). mobile: overlay open/close.
+  applyDesktopCollapsed(localStorage.getItem('ledgerine_sidebar')==='1');
+  function applyDesktopCollapsed(c){ if(!isMobile()) shell.classList.toggle('sidebar-collapsed', c); }
+
+  document.getElementById('sidebarToggle').onclick = ()=>{
+    if(isMobile()){
+      shell.classList.toggle('sidebar-open');
+    }else{
+      const now = !shell.classList.contains('sidebar-collapsed');
+      shell.classList.toggle('sidebar-collapsed', now);
+      localStorage.setItem('ledgerine_sidebar', now?'1':'0');
+    }
+  };
+  backdrop.onclick = ()=>shell.classList.remove('sidebar-open');
+  // tutup overlay saat klik menu (mobile)
+  shell.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{
+    if(isMobile()) shell.classList.remove('sidebar-open');
+  }));
+
   return { user:u, content:document.getElementById('content') };
 }

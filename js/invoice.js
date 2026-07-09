@@ -15,7 +15,7 @@
     metodeBayar:'Transfer', bankId:'', bank:null,
     editId:null
   };
-  function blankItem(){ return {desc:'',qty:1,harga:0,disc:0}; }
+  function blankItem(){ return {productId:'',desc:'',qty:1,harga:0,disc:0}; }
 
   let customers=[], products=[], savedSeller=null, banks=[];
 
@@ -126,9 +126,10 @@
         <button class="btn btn-sm add-line" id="addLine">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Tambah baris</button>
         <div class="grid-2 mt-4">
-          <div class="ed-row"><label class="label">PPN (%)</label>
+          <div class="ed-row"><label class="label">PPN (%) — harga sudah termasuk</label>
             <input type="number" class="field" data-b="ppn" value="${state.ppn}" min="0" step="0.1"></div>
         </div>
+        <div class="muted" style="font-size:11.5px;margin-top:2px">Harga barang sudah include PPN. HPP & PPN dihitung mundur otomatis.</div>
       </div>
 
       <div class="ed-section">
@@ -232,18 +233,34 @@
 
   function buildLineItems(){
     const area=editor.querySelector('#liArea');
+    const prodOpts=(sel)=>`<option value="">— pilih barang / manual —</option>`+
+      products.map(p=>`<option value="${p.id}" ${String(sel)===String(p.id)?'selected':''}>${esc(p.nama)} — ${Fmt.currency(p.harga)}</option>`).join('');
     area.innerHTML=`<table class="li-table">
-      <thead><tr><th style="width:40%">Deskripsi</th><th>Qty</th><th>Harga</th><th>Disc%</th><th></th></tr></thead>
+      <thead><tr><th style="width:42%">Barang / Deskripsi</th><th>Qty</th><th>Harga</th><th>Disc%</th><th></th></tr></thead>
       <tbody>${state.items.map((it,i)=>`
         <tr>
-          <td><input class="field li-input-desc" data-i="${i}" data-f="desc" value="${esc(it.desc)}" placeholder="Deskripsi item"></td>
-          <td><input class="field" type="number" data-i="${i}" data-f="qty" value="${it.qty}" min="0" step="1" style="width:56px"></td>
+          <td>
+            <select class="field" data-i="${i}" data-f="productId" style="margin-bottom:5px">${prodOpts(it.productId)}</select>
+            <input class="field li-input-desc" data-i="${i}" data-f="desc" value="${esc(it.desc)}" placeholder="Deskripsi item">
+          </td>
+          <td><input class="field" type="number" data-i="${i}" data-f="qty" value="${it.qty}" min="0" step="1" style="width:52px"></td>
           <td><input class="field" type="number" data-i="${i}" data-f="harga" value="${it.harga}" min="0" style="width:88px"></td>
-          <td><input class="field" type="number" data-i="${i}" data-f="disc" value="${it.disc}" min="0" max="100" style="width:56px"></td>
+          <td><input class="field" type="number" data-i="${i}" data-f="disc" value="${it.disc}" min="0" max="100" style="width:52px"></td>
           <td><button class="li-del" data-del="${i}" title="Hapus">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
           </button></td>
         </tr>`).join('')}</tbody></table>`;
+
+    // product select → autofill desc + harga (harga include PPN)
+    area.querySelectorAll('select[data-f="productId"]').forEach(sel=>{
+      sel.addEventListener('change',()=>{
+        const i=+sel.dataset.i;
+        const p=products.find(x=>String(x.id)===sel.value);
+        state.items[i].productId = p?p.id:'';
+        if(p){ state.items[i].desc=p.nama; state.items[i].harga=Number(p.harga)||0; }
+        buildLineItems(); render();
+      });
+    });
     area.querySelectorAll('input[data-i]').forEach(el=>{
       el.addEventListener('input',()=>{
         const i=+el.dataset.i, f=el.dataset.f;
@@ -258,29 +275,27 @@
     });
   }
 
-  // ---------- calculations ----------
+  // ---------- calculations (harga INCLUDE PPN, hitung mundur) ----------
   function lineTotal(it){ return (Number(it.qty)||0)*(Number(it.harga)||0)*(1-(Number(it.disc)||0)/100); }
   function calc(){
     const active=state.items.filter(it=>it.desc.trim()!=='' || Number(it.qty)||Number(it.harga));
-    const subtotal=active.reduce((s,it)=>s+lineTotal(it),0);
-    const ppnAmt=subtotal*(Number(state.ppn)||0)/100;
-    const total=subtotal+ppnAmt;
-    return {active,subtotal,ppnAmt,total};
+    const total=active.reduce((s,it)=>s+lineTotal(it),0); // total sudah termasuk PPN
+    const rate=(Number(state.ppn)||0)/100;                // default 11%
+    const dpp=rate>0 ? total/(1+rate) : total;            // HPP / DPP
+    const ppnAmt=total-dpp;                               // PPN inklusif
+    return {active,total,dpp,ppnAmt};
   }
 
   // ---------- PREVIEW ----------
   function render(){
-    const {active,subtotal,ppnAmt,total}=calc();
+    const {active,total,dpp,ppnAmt}=calc();
     const cur=state.mataUang;
     const rows = active.length? active.map(it=>`
       <tr>
-        <td class="it-desc">${esc(it.desc||'—')}</td>
-        <td class="c">${Fmt.number(it.qty)}</td>
-        <td class="r">${Fmt.currency(it.harga,cur)}</td>
-        <td class="c">${it.disc?Fmt.number(it.disc)+'%':'—'}</td>
+        <td class="it-desc">${esc(it.desc||'—')}${(Number(it.qty)||0)!==1?`<span style="color:#888;font-weight:400"> × ${Fmt.number(it.qty)}</span>`:''}${it.disc?`<span style="color:#888;font-weight:400"> (disc ${Fmt.number(it.disc)}%)</span>`:''}</td>
         <td class="r">${Fmt.currency(lineTotal(it),cur)}</td>
       </tr>`).join('')
-      : `<tr><td colspan="5" style="text-align:center;color:#bbb;padding:26px">Belum ada item</td></tr>`;
+      : `<tr><td colspan="2" style="text-align:center;color:#bbb;padding:26px">Belum ada item</td></tr>`;
 
     const statusBadge = state.status==='PAID'
       ? `<span class="doc-status st-paid">● LUNAS</span>`
@@ -321,7 +336,7 @@
       </div>
 
       <table class="doc-items">
-        <thead><tr><th>Deskripsi</th><th class="c">Qty</th><th class="r">Harga</th><th class="c">Disc</th><th class="r">Jumlah</th></tr></thead>
+        <thead><tr><th>Deskripsi</th><th class="r">Jumlah</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
 
@@ -332,7 +347,7 @@
           ${paymentBlock()}
         </div>
         <div class="doc-summary">
-          <div class="sum-row sub"><span>Subtotal</span><span>${Fmt.currency(subtotal,cur)}</span></div>
+          <div class="sum-row sub"><span>DPP (HPP)</span><span>${Fmt.currency(dpp,cur)}</span></div>
           <div class="sum-row"><span>PPN (${Fmt.number(state.ppn)}%)</span><span>${Fmt.currency(ppnAmt,cur)}</span></div>
           <div class="sum-total"><span>Total</span><span>${Fmt.currency(total,cur)}</span></div>
         </div>
@@ -414,14 +429,14 @@
     if(!state.nomor){ toast('Nomor invoice wajib diisi','err'); return; }
     if(!state.metodeBayar){ toast('Pilih metode bayar','err'); return; }
     if(state.metodeBayar==='Transfer' && !state.bankId){ toast('Pilih rekening bank tujuan','err'); return; }
-    const {subtotal,total}=calc();
+    const {total,dpp,ppnAmt}=calc();
     const btn=content.querySelector('#saveBtn');
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Menyimpan...';
     const payload={
       nomor:state.nomor, tanggal:state.tanggal, jatuhTempo:state.jatuhTempo, mataUang:state.mataUang,
       customerId:state.customerId, customerSnapshot:JSON.stringify(state.customer),
       sellerSnapshot:JSON.stringify(state.seller), items:JSON.stringify(state.items),
-      ppn:state.ppn, subtotal:Math.round(subtotal), total:Math.round(total),
+      ppn:state.ppn, subtotal:Math.round(dpp), total:Math.round(total),
       status:state.status, catatan:state.catatan,
       metodeBayar:state.metodeBayar, bankId:state.bankId,
       bankSnapshot:state.bank?JSON.stringify(state.bank):'',
@@ -466,9 +481,10 @@
     if(s){ try{ state.seller=JSON.parse(s); }catch(e){} }
     const isEdit=loadEditFromStorage();
     try{
-      const [c,inv,bk]=await Promise.all([API.list('Customers'),API.list('Invoices'),API.list('Banks')]);
+      const [c,inv,bk,pr]=await Promise.all([API.list('Customers'),API.list('Invoices'),API.list('Banks'),API.list('Products')]);
       customers=(c.rows||[]).filter(x=>x.id);
       banks=(bk.rows||[]).filter(x=>x.id);
+      products=(pr.rows||[]).filter(x=>x.id);
       if(state.bankId && !state.bank) state.bank=banks.find(b=>String(b.id)===String(state.bankId))||null;
       if(!isEdit) state.nomor=nextNumber((inv.rows||[]).filter(x=>x.id));
     }catch(e){ toast(e.message,'err'); }
