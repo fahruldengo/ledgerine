@@ -61,7 +61,11 @@ select.field{cursor:pointer;appearance:none;
 /* ---- App shell ---- */
 .app{display:flex;min-height:100vh}
 .sidebar{width:230px;background:var(--surface);border-right:1px solid var(--border);
-  padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+  transition:margin-left var(--t),transform var(--t)}
+.sidebar-toggle{padding:6px}
+/* desktop collapse: geser sidebar keluar */
+.app.sidebar-collapsed .sidebar{margin-left:-231px}
 .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;
   letter-spacing:-.02em;padding:4px 8px 18px}
 .brand-dot{width:22px;height:22px;border-radius:7px;background:var(--accent);
@@ -133,6 +137,10 @@ table.data tbody tr:hover{background:#FafBfC}
 .muted{color:var(--muted)}.right{text-align:right}.mono{font-variant-numeric:tabular-nums}
 
 @media(max-width:900px){
-  .sidebar{display:none}
+  .sidebar{position:fixed;left:0;top:0;z-index:60;box-shadow:var(--shadow-lg);margin-left:0}
+  .app .sidebar{transform:translateX(-100%)}
+  .app.sidebar-open .sidebar{transform:translateX(0)}
+  .app.sidebar-open .sidebar-backdrop{display:block}
   .grid-2{grid-template-columns:1fr}
 }
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(17,24,39,.4);z-index:55}
