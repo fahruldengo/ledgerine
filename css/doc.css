@@ -91,10 +91,12 @@ table.doc-items tbody tr:last-child td{border-bottom:1px solid #DDD}
 
 /* signature block (shared invoice + kwitansi) */
 .doc-sign{display:flex;justify-content:flex-end;margin-top:34px}
-.doc-sign .box{text-align:center;min-width:220px}
-.doc-sign .place{font-size:12.5px;color:#555;margin-bottom:6px}
-.doc-sign .role{font-size:12.5px;color:#555;margin-bottom:64px}
-.doc-sign .name{font-weight:600;border-top:1px solid #333;padding-top:6px;display:inline-block;min-width:180px}
+.doc-sign .box{text-align:center;min-width:230px}
+.doc-sign .place{font-size:12.5px;color:#555;margin-bottom:4px}
+.doc-sign .role{font-size:12.5px;color:#555;margin-bottom:6px}
+.doc-sign .sign-space{height:80px;display:flex;align-items:center;justify-content:center;
+  color:#c9ccd1;font-size:11px;font-style:italic}
+.doc-sign .name{font-weight:600;border-top:1px solid #333;padding-top:6px;display:inline-block;min-width:200px}
 .doc-sign .job{font-size:12px;color:#666;margin-top:2px}
 
 .doc-foot{margin-top:auto;padding-top:30px;text-align:center;color:#999;font-size:11px}
