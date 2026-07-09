@@ -118,10 +118,6 @@
         <div id="liArea"></div>
         <button class="btn btn-sm add-line" id="addLine">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Tambah baris</button>
-        <div class="grid-2 mt-4">
-          <div class="ed-row"><label class="label">PPN (%)</label>
-            <input type="number" class="field" data-b="ppn" value="${state.ppn}" min="0" step="0.1"></div>
-        </div>
       </div>
 
       <div class="ed-section">
@@ -262,9 +258,8 @@
   function calc(){
     const active=state.items.filter(it=>it.desc.trim()!=='' || Number(it.qty)||Number(it.harga));
     const subtotal=active.reduce((s,it)=>s+lineTotal(it),0);
-    const ppnAmt=subtotal*(Number(state.ppn)||0)/100;
-    const total=subtotal+ppnAmt;
-    return {active,subtotal,ppnAmt,total};
+    const total=subtotal; // kwitansi tidak menampilkan PPN, total = jumlah keseluruhan
+    return {active,subtotal,total};
   }
 
   function paymentBlock(){
@@ -285,23 +280,21 @@
     if(!state.ttdNama && !state.ttdJabatan) return '';
     return `<div class="doc-sign"><div class="box">
         <div class="place">${esc(state.tempat||'')}, ${Fmt.date(state.tanggal)}</div>
+        <div class="sign-space">( ruang tanda tangan )</div>
         <div class="name">${esc(state.ttdNama||'—')}</div>
         ${state.ttdJabatan?`<div class="job">${esc(state.ttdJabatan)}</div>`:''}
       </div></div>`;
   }
 
   function render(){
-    const {active,subtotal,ppnAmt,total}=calc();
+    const {active,subtotal,total}=calc();
     const cur=state.mataUang;
     const rows=active.length?active.map(it=>`
       <tr>
         <td class="it-desc">${esc(it.desc||'—')}${it.ket?`<div style="font-weight:400;color:#777;font-size:11.5px;margin-top:2px">${esc(it.ket)}</div>`:''}</td>
-        <td class="c">${Fmt.number(it.qty)}</td>
-        <td class="r">${Fmt.currency(it.harga,cur)}</td>
-        <td class="c">${it.disc?Fmt.number(it.disc)+'%':'—'}</td>
         <td class="r">${Fmt.currency(lineTotal(it),cur)}</td>
       </tr>`).join('')
-      :`<tr><td colspan="5" style="text-align:center;color:#bbb;padding:26px">Belum ada item</td></tr>`;
+      :`<tr><td colspan="2" style="text-align:center;color:#bbb;padding:26px">Belum ada item</td></tr>`;
 
     const logoHtml=state.logo?`<img src="${state.logo}" class="doc-logo">`:`<div class="doc-logo-empty">${esc(state.seller.nama||'Logo')}</div>`;
 
@@ -339,7 +332,7 @@
       ${state.untukPembayaran?`<div style="margin-bottom:18px;font-size:13px;color:#444"><strong style="color:#1a1a1a">Untuk pembayaran:</strong> ${esc(state.untukPembayaran)}</div>`:''}
 
       <table class="doc-items">
-        <thead><tr><th>Deskripsi</th><th class="c">Qty</th><th class="r">Harga</th><th class="c">Disc</th><th class="r">Jumlah</th></tr></thead>
+        <thead><tr><th>Deskripsi</th><th class="r">Jumlah</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
 
@@ -350,9 +343,7 @@
           ${paymentBlock()}
         </div>
         <div class="doc-summary">
-          <div class="sum-row sub"><span>Subtotal</span><span>${Fmt.currency(subtotal,cur)}</span></div>
-          <div class="sum-row"><span>PPN (${Fmt.number(state.ppn)}%)</span><span>${Fmt.currency(ppnAmt,cur)}</span></div>
-          <div class="sum-total"><span>Total Diterima</span><span>${Fmt.currency(total,cur)}</span></div>
+          <div class="sum-total"><span>Total Pembayaran</span><span>${Fmt.currency(total,cur)}</span></div>
         </div>
       </div>
 

@@ -362,6 +362,7 @@
     if(!state.ttdNama && !state.ttdJabatan) return '';
     return `<div class="doc-sign"><div class="box">
         <div class="place">${esc(state.tempat||'')}, ${Fmt.date(state.tanggal)}</div>
+        <div class="sign-space">( ruang tanda tangan )</div>
         <div class="name">${esc(state.ttdNama||'—')}</div>
         ${state.ttdJabatan?`<div class="job">${esc(state.ttdJabatan)}</div>`:''}
       </div></div>`;
