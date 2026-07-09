@@ -1,4 +1,4 @@
-/* ===== Kwitansi (receipt) editor — layout mengikuti invoice ===== */
+/* ===== Kwitansi (receipt) editor — multi-invoice, nilai dari total invoice ===== */
 (function(){
   const L=buildLayout('receipts.html'); if(!L) return;
   const content=L.content, user=L.user;
@@ -7,14 +7,12 @@
     logo:'', nomor:'', mataUang:'IDR', tanggal:Fmt.dateInput(),
     seller:{nama:'',alamat:'',telepon:'',email:''},
     customerId:'', customer:{nama:'',alamat:'',telepon:'',email:''},
-    sudahTerima:'', untukPembayaran:'',
-    items:[ blankItem() ], ppn:11,
-    invoiceRef:'', invoiceId:'',
+    sudahTerima:'',
+    lines:[],            // {invoiceId, invoiceNomor, desc, nilai}
     catatan:'', ttdNama:'', ttdJabatan:'', tempat:'Gorontalo',
     metodeBayar:'Transfer', bankId:'', bank:null,
     editId:null
   };
-  function blankItem(){ return {desc:'',ket:'',qty:1,harga:0,disc:0}; }
 
   let customers=[], paidInvoices=[], usedInvoiceIds=new Set(), banks=[];
 
@@ -38,12 +36,14 @@
     </div>`;
   const editor=content.querySelector('#editor'), sheet=content.querySelector('#sheet');
 
+  // invoice yang boleh dipilih: PAID & belum dibuatkan kwitansi (kecuali yang sudah masuk state ini saat edit)
   function availableInvoices(){
-    return paidInvoices.filter(inv=> !usedInvoiceIds.has(String(inv.id)) || String(inv.id)===String(state.invoiceId));
+    const chosen=new Set(state.lines.map(l=>String(l.invoiceId)));
+    return paidInvoices.filter(inv=> !usedInvoiceIds.has(String(inv.id)) || chosen.has(String(inv.id)));
   }
 
   function buildEditor(){
-    const invOpts=availableInvoices();
+    const invList=availableInvoices();
     editor.innerHTML=`
       <div class="ed-section">
         <div class="sec-title">Logo</div>
@@ -55,16 +55,20 @@
       </div>
 
       <div class="ed-section">
-        <div class="sec-title">Ambil dari Invoice (Lunas)</div>
-        <div class="ed-row"><label class="label">Referensi Invoice PAID</label>
-          <select class="field" id="invSelect">
-            <option value="">— tanpa referensi (isi manual) —</option>
-            ${invOpts.map(inv=>{
-              let cn=''; try{ cn=JSON.parse(inv.customerSnapshot||'{}').nama||''; }catch(e){}
-              return `<option value="${inv.id}" ${String(state.invoiceId)===String(inv.id)?'selected':''}>${esc(inv.nomor)} — ${esc(cn)} — ${Fmt.currency(inv.total,inv.mataUang)}</option>`;
-            }).join('')}
-          </select>
-          <div class="muted" style="font-size:11.5px;margin-top:6px">Hanya invoice berstatus Lunas & belum dibuatkan kwitansi yang muncul.</div>
+        <div class="sec-title">Pilih Invoice (Lunas)</div>
+        <div class="muted" style="font-size:11.5px;margin-bottom:10px">Centang invoice yang dilunasi. Nilai diambil dari total tiap invoice. Bisa lebih dari satu.</div>
+        <div id="invChecklist">
+          ${invList.length? invList.map(inv=>{
+            let cn=''; try{ cn=JSON.parse(inv.customerSnapshot||'{}').nama||''; }catch(e){}
+            const checked=state.lines.some(l=>String(l.invoiceId)===String(inv.id));
+            return `<label class="inv-check ${checked?'on':''}">
+              <input type="checkbox" data-inv="${inv.id}" ${checked?'checked':''}>
+              <span class="ic-body">
+                <span class="ic-nom">${esc(inv.nomor)}</span>
+                <span class="ic-meta">${esc(cn)} · ${Fmt.currency(inv.total,inv.mataUang)}</span>
+              </span>
+            </label>`;
+          }).join('') : `<div class="muted" style="font-size:12.5px">Tidak ada invoice Lunas yang tersedia. Buat kwitansi manual dengan menambah baris di bawah.</div>`}
         </div>
       </div>
 
@@ -109,15 +113,14 @@
           <input class="field" data-b="sudahTerima" value="${esc(state.sudahTerima)}" placeholder="Nama pihak yang membayar"></div>
         <div class="ed-row"><label class="label">Alamat pembayar</label>
           <textarea class="field" data-c="alamat">${esc(state.customer.alamat)}</textarea></div>
-        <div class="ed-row"><label class="label">Untuk pembayaran</label>
-          <input class="field" data-b="untukPembayaran" placeholder="Uraian singkat pembayaran" value="${esc(state.untukPembayaran)}"></div>
       </div>
 
       <div class="ed-section">
-        <div class="sec-title">Item Barang</div>
+        <div class="sec-title">Rincian Kwitansi</div>
+        <div class="muted" style="font-size:11.5px;margin-bottom:10px">Deskripsi bisa diisi manual. Nilai dari invoice terkunci; baris manual bisa diedit nilainya.</div>
         <div id="liArea"></div>
         <button class="btn btn-sm add-line" id="addLine">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Tambah baris</button>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Tambah baris manual</button>
       </div>
 
       <div class="ed-section">
@@ -158,12 +161,12 @@
         Download PDF
       </button>`;
     wireEditor();
-    buildLineItems();
+    buildLines();
   }
 
   function wireEditor(){
     editor.querySelectorAll('[data-b]').forEach(el=>el.addEventListener('input',()=>{
-      const k=el.dataset.b; state[k]=(k==='ppn')?(parseFloat(el.value)||0):el.value; render();
+      state[el.dataset.b]=el.value; render();
     }));
     editor.querySelectorAll('[data-s]').forEach(el=>el.addEventListener('input',()=>{ state.seller[el.dataset.s]=el.value; render(); }));
     editor.querySelectorAll('[data-c]').forEach(el=>el.addEventListener('input',()=>{ state.customer[el.dataset.c]=el.value; render(); }));
@@ -178,27 +181,30 @@
     };
     const rm=editor.querySelector('#rmLogo'); if(rm) rm.onclick=()=>{ state.logo=''; buildEditor(); render(); };
 
-    // pilih invoice PAID → salin data
-    editor.querySelector('#invSelect').onchange=(e)=>{
-      const inv=paidInvoices.find(x=>String(x.id)===e.target.value);
-      if(!inv){ state.invoiceId=''; state.invoiceRef=''; buildEditor(); render(); return; }
-      state.invoiceId=inv.id; state.invoiceRef=inv.nomor;
-      let cust={}; try{ cust=JSON.parse(inv.customerSnapshot||'{}'); }catch(e){}
-      state.customerId=inv.customerId||'';
-      state.customer={nama:cust.nama||'',alamat:cust.alamat||'',telepon:cust.telepon||'',email:cust.email||''};
-      state.sudahTerima=cust.nama||'';
-      let its=[]; try{ its=JSON.parse(inv.items||'[]'); }catch(e){}
-      state.items=(its.length?its:[blankItem()]).map(it=>({desc:it.desc||'',ket:it.ket||'',qty:Number(it.qty)||0,harga:Number(it.harga)||0,disc:Number(it.disc)||0}));
-      state.ppn=Number(inv.ppn)||0;
-      state.mataUang=inv.mataUang||'IDR';
-      state.untukPembayaran='Pelunasan invoice '+inv.nomor;
-      if(inv.metodeBayar){ state.metodeBayar=inv.metodeBayar; }
-      if(inv.bankId){ state.bankId=inv.bankId; state.bank=inv.bankSnapshot?JSON.parse(inv.bankSnapshot):(banks.find(b=>String(b.id)===String(inv.bankId))||null); }
-      if(inv.logo && !state.logo) state.logo=inv.logo;
-      if(inv.sellerSnapshot){ try{ state.seller=JSON.parse(inv.sellerSnapshot); }catch(e){} }
-      buildEditor(); render();
-      toast('Data disalin dari '+inv.nomor);
-    };
+    // checkbox invoice → tambah/hapus baris
+    editor.querySelectorAll('input[data-inv]').forEach(chk=>{
+      chk.addEventListener('change',()=>{
+        const inv=paidInvoices.find(x=>String(x.id)===chk.dataset.inv);
+        if(!inv) return;
+        if(chk.checked){
+          state.lines.push({ invoiceId:inv.id, invoiceNomor:inv.nomor, desc:'', nilai:Number(inv.total)||0 });
+          // ambil data pembayar & penjual dari invoice pertama yang dicentang
+          if(state.lines.length===1){
+            let cust={}; try{ cust=JSON.parse(inv.customerSnapshot||'{}'); }catch(e){}
+            state.customerId=inv.customerId||'';
+            state.customer={nama:cust.nama||'',alamat:cust.alamat||'',telepon:cust.telepon||'',email:cust.email||''};
+            if(!state.sudahTerima) state.sudahTerima=cust.nama||'';
+            if(inv.sellerSnapshot){ try{ state.seller=JSON.parse(inv.sellerSnapshot); }catch(e){} }
+            if(inv.logo && !state.logo) state.logo=inv.logo;
+            if(inv.metodeBayar) state.metodeBayar=inv.metodeBayar;
+            if(inv.bankId){ state.bankId=inv.bankId; state.bank=inv.bankSnapshot?JSON.parse(inv.bankSnapshot):(banks.find(b=>String(b.id)===String(inv.bankId))||null); }
+          }
+        }else{
+          state.lines=state.lines.filter(l=>String(l.invoiceId)!==String(inv.id));
+        }
+        buildEditor(); render();
+      });
+    });
 
     editor.querySelector('#custSelect').onchange=(e)=>{
       const c=customers.find(x=>String(x.id)===e.target.value);
@@ -207,7 +213,7 @@
       buildEditor(); render();
     };
     editor.querySelector('#saveSeller').onclick=()=>{ localStorage.setItem('ledgerine_seller',JSON.stringify(state.seller)); toast('Info penjual disimpan'); };
-    editor.querySelector('#addLine').onclick=()=>{ state.items.push(blankItem()); buildLineItems(); render(); };
+    editor.querySelector('#addLine').onclick=()=>{ state.lines.push({invoiceId:'',invoiceNomor:'',desc:'',nilai:0}); buildLines(); render(); };
     editor.querySelector('#pdfBtn').onclick=exportPDF;
 
     const mSel=editor.querySelector('[data-b="metodeBayar"]');
@@ -225,41 +231,46 @@
     };
   }
 
-  function buildLineItems(){
+  function buildLines(){
     const area=editor.querySelector('#liArea');
+    if(!state.lines.length){
+      area.innerHTML=`<div class="muted" style="font-size:12.5px;padding:6px 0">Belum ada baris. Centang invoice di atas atau tambah baris manual.</div>`;
+      return;
+    }
     area.innerHTML=`<table class="li-table">
-      <thead><tr><th style="width:32%">Deskripsi</th><th style="width:28%">Keterangan</th><th>Qty</th><th>Harga</th><th>Disc%</th><th></th></tr></thead>
-      <tbody>${state.items.map((it,i)=>`
-        <tr>
-          <td><input class="field li-input-desc" data-i="${i}" data-f="desc" value="${esc(it.desc)}" placeholder="Nama barang"></td>
-          <td><input class="field li-input-desc" data-i="${i}" data-f="ket" value="${esc(it.ket)}" placeholder="Keterangan"></td>
-          <td><input class="field" type="number" data-i="${i}" data-f="qty" value="${it.qty}" min="0" step="1" style="width:52px"></td>
-          <td><input class="field" type="number" data-i="${i}" data-f="harga" value="${it.harga}" min="0" style="width:84px"></td>
-          <td><input class="field" type="number" data-i="${i}" data-f="disc" value="${it.disc}" min="0" max="100" style="width:52px"></td>
+      <thead><tr><th style="width:58%">Deskripsi</th><th class="r">Nilai</th><th></th></tr></thead>
+      <tbody>${state.lines.map((l,i)=>{
+        const fromInv=!!l.invoiceId;
+        return `<tr>
+          <td>
+            <input class="field li-input-desc" data-i="${i}" data-f="desc" value="${esc(l.desc)}" placeholder="${fromInv?('Pelunasan '+esc(l.invoiceNomor)):'Deskripsi'}">
+            ${fromInv?`<div class="muted" style="font-size:10.5px;margin-top:3px">dari ${esc(l.invoiceNomor)}</div>`:''}
+          </td>
+          <td><input class="field" type="number" data-i="${i}" data-f="nilai" value="${l.nilai}" min="0" style="width:110px;${fromInv?'background:#F3F4F6':''}" ${fromInv?'readonly title="Nilai terkunci dari invoice"':''}></td>
           <td><button class="li-del" data-del="${i}" title="Hapus">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
           </button></td>
-        </tr>`).join('')}</tbody></table>`;
+        </tr>`;
+      }).join('')}</tbody></table>`;
     area.querySelectorAll('input[data-i]').forEach(el=>{
       el.addEventListener('input',()=>{
         const i=+el.dataset.i, f=el.dataset.f;
-        state.items[i][f]=(f==='desc'||f==='ket')?el.value:(parseFloat(el.value)||0);
+        if(f==='nilai' && state.lines[i].invoiceId) return; // terkunci
+        state.lines[i][f]=(f==='desc')?el.value:(parseFloat(el.value)||0);
         render();
       });
     });
     area.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
-      state.items.splice(+b.dataset.del,1);
-      if(!state.items.length) state.items.push(blankItem());
-      buildLineItems(); render();
+      const l=state.lines[+b.dataset.del];
+      state.lines.splice(+b.dataset.del,1);
+      buildEditor(); render(); // rebuild agar checkbox invoice ikut ter-uncheck
     });
   }
 
-  function lineTotal(it){ return (Number(it.qty)||0)*(Number(it.harga)||0)*(1-(Number(it.disc)||0)/100); }
   function calc(){
-    const active=state.items.filter(it=>it.desc.trim()!=='' || Number(it.qty)||Number(it.harga));
-    const subtotal=active.reduce((s,it)=>s+lineTotal(it),0);
-    const total=subtotal; // kwitansi tidak menampilkan PPN, total = jumlah keseluruhan
-    return {active,subtotal,total};
+    const active=state.lines.filter(l=>l.desc.trim()!=='' || Number(l.nilai) || l.invoiceId);
+    const total=active.reduce((s,l)=>s+(Number(l.nilai)||0),0);
+    return {active,total};
   }
 
   function paymentBlock(){
@@ -280,19 +291,19 @@
     if(!state.ttdNama && !state.ttdJabatan) return '';
     return `<div class="doc-sign"><div class="box">
         <div class="place">${esc(state.tempat||'')}, ${Fmt.date(state.tanggal)}</div>
-        <div class="sign-space">( ruang tanda tangan )</div>
+        <div class="sign-space"></div>
         <div class="name">${esc(state.ttdNama||'—')}</div>
         ${state.ttdJabatan?`<div class="job">${esc(state.ttdJabatan)}</div>`:''}
       </div></div>`;
   }
 
   function render(){
-    const {active,subtotal,total}=calc();
+    const {active,total}=calc();
     const cur=state.mataUang;
-    const rows=active.length?active.map(it=>`
+    const rows=active.length?active.map(l=>`
       <tr>
-        <td class="it-desc">${esc(it.desc||'—')}${it.ket?`<div style="font-weight:400;color:#777;font-size:11.5px;margin-top:2px">${esc(it.ket)}</div>`:''}</td>
-        <td class="r">${Fmt.currency(lineTotal(it),cur)}</td>
+        <td class="it-desc">${esc(l.desc|| (l.invoiceNomor?('Pelunasan '+l.invoiceNomor):'—'))}</td>
+        <td class="r">${Fmt.currency(l.nilai,cur)}</td>
       </tr>`).join('')
       :`<tr><td colspan="2" style="text-align:center;color:#bbb;padding:26px">Belum ada item</td></tr>`;
 
@@ -305,7 +316,6 @@
         <div class="doc-title-block">
           <div class="doc-title">KWITANSI</div>
           <div class="doc-number">${esc(state.nomor||'—')}</div>
-          ${state.invoiceRef?`<div class="doc-number">Ref: ${esc(state.invoiceRef)}</div>`:''}
           <div><span class="doc-status st-paid">● LUNAS</span></div>
         </div>
       </div>
@@ -325,11 +335,8 @@
         </div>
         <div class="doc-meta">
           <div class="mrow"><span class="k">Tanggal</span><span class="v">${Fmt.date(state.tanggal)}</span></div>
-          ${state.invoiceRef?`<div class="mrow"><span class="k">Ref Invoice</span><span class="v">${esc(state.invoiceRef)}</span></div>`:''}
         </div>
       </div>
-
-      ${state.untukPembayaran?`<div style="margin-bottom:18px;font-size:13px;color:#444"><strong style="color:#1a1a1a">Untuk pembayaran:</strong> ${esc(state.untukPembayaran)}</div>`:''}
 
       <table class="doc-items">
         <thead><tr><th>Deskripsi</th><th class="r">Jumlah</th></tr></thead>
@@ -372,15 +379,18 @@
     if(!state.nomor){ toast('Nomor kwitansi wajib diisi','err'); return; }
     if(!state.metodeBayar){ toast('Pilih metode bayar','err'); return; }
     if(state.metodeBayar==='Transfer' && !state.bankId){ toast('Pilih rekening bank tujuan','err'); return; }
-    const {subtotal,total}=calc();
+    const {total}=calc();
+    if(total<=0){ toast('Nilai kwitansi masih 0. Centang invoice atau isi baris manual.','err'); return; }
     const btn=content.querySelector('#saveBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Menyimpan...';
+    const invoiceIds=state.lines.map(l=>l.invoiceId).filter(Boolean);
     const payload={
       nomor:state.nomor, tanggal:state.tanggal, mataUang:state.mataUang, customerId:state.customerId,
       customerSnapshot:JSON.stringify(state.customer), sellerSnapshot:JSON.stringify(state.seller),
-      sudahTerima:state.sudahTerima, untukPembayaran:state.untukPembayaran,
-      items:JSON.stringify(state.items), ppn:state.ppn, subtotal:Math.round(subtotal),
+      sudahTerima:state.sudahTerima, untukPembayaran:'',
+      items:JSON.stringify(state.lines), ppn:0, subtotal:Math.round(total),
       jumlah:Math.round(total), terbilang:terbilangRupiah(total,state.mataUang),
-      invoiceRef:state.invoiceRef, invoiceId:state.invoiceId,
+      invoiceRef:state.lines.map(l=>l.invoiceNomor).filter(Boolean).join(', '),
+      invoiceId:invoiceIds.join(','),
       metodeBayar:state.metodeBayar, bankId:state.bankId,
       bankSnapshot:state.bank?JSON.stringify(state.bank):'',
       catatan:state.catatan, ttdNama:state.ttdNama, ttdJabatan:state.ttdJabatan, tempat:state.tempat,
@@ -389,7 +399,7 @@
     try{
       if(state.editId){ payload.id=state.editId; await API.update('Receipts',payload); toast('Kwitansi diperbarui'); }
       else{ payload.createdAt=new Date().toISOString(); const r=await API.create('Receipts',payload); state.editId=r.data.id;
-        if(state.invoiceId) usedInvoiceIds.add(String(state.invoiceId));
+        invoiceIds.forEach(id=>usedInvoiceIds.add(String(id)));
         toast('Kwitansi disimpan'); }
     }catch(e){ toast(e.message,'err'); }
     finally{ btn.disabled=false; btn.innerHTML='Simpan ke Sheets'; }
@@ -404,10 +414,14 @@
       state.editId=k.id; state.nomor=k.nomor; state.tanggal=Fmt.dateInput(k.tanggal);
       state.mataUang=k.mataUang||'IDR'; state.customerId=k.customerId||'';
       state.customer=k.customerSnapshot?JSON.parse(k.customerSnapshot):state.customer;
-      state.sudahTerima=k.sudahTerima||''; state.untukPembayaran=k.untukPembayaran||'';
-      state.items=k.items?JSON.parse(k.items):[blankItem()];
-      state.ppn=Number(k.ppn)||0;
-      state.invoiceRef=k.invoiceRef||''; state.invoiceId=k.invoiceId||'';
+      state.sudahTerima=k.sudahTerima||'';
+      // items lama bisa berformat item {desc,qty,harga}; konversi ke lines {desc,nilai}
+      let parsed=[]; try{ parsed=k.items?JSON.parse(k.items):[]; }catch(e){}
+      state.lines=parsed.map(x=>{
+        if('nilai' in x) return { invoiceId:x.invoiceId||'', invoiceNomor:x.invoiceNomor||'', desc:x.desc||'', nilai:Number(x.nilai)||0 };
+        const val=(Number(x.qty)||0)*(Number(x.harga)||0)*(1-(Number(x.disc)||0)/100);
+        return { invoiceId:'', invoiceNomor:'', desc:x.desc||'', nilai:Math.round(val) };
+      });
       state.catatan=k.catatan||''; state.logo=k.logo||'';
       state.ttdNama=k.ttdNama||''; state.ttdJabatan=k.ttdJabatan||''; state.tempat=k.tempat||'Gorontalo';
       state.metodeBayar=k.metodeBayar||'Transfer'; state.bankId=k.bankId||'';
@@ -427,7 +441,9 @@
       banks=(bk.rows||[]).filter(x=>x.id);
       if(state.bankId && !state.bank) state.bank=banks.find(b=>String(b.id)===String(state.bankId))||null;
       const receipts=(kw.rows||[]).filter(x=>x.id);
-      usedInvoiceIds=new Set(receipts.map(r=>String(r.invoiceId)).filter(Boolean));
+      // kumpulkan invoiceId yang sudah dipakai (bisa comma-separated)
+      usedInvoiceIds=new Set();
+      receipts.forEach(r=>{ String(r.invoiceId||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(id=>usedInvoiceIds.add(id)); });
       paidInvoices=(inv.rows||[]).filter(x=>x.id && String(x.status).toUpperCase()==='PAID');
       if(!isEdit) state.nomor=nextNumber(receipts);
     }catch(e){ toast(e.message,'err'); }
