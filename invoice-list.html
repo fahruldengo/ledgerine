@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Daftar Faktur · Ledgerine</title>
+<title>Daftar Invoice · Ledgerine</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -13,8 +13,8 @@
 <script>
 docListPage({
   active:'invoices.html', sheet:'Invoices',
-  title:'Daftar Faktur', subtitle:'Faktur tersimpan di Google Sheets',
-  newLabel:'Faktur Baru', editorPage:'invoices.html', editKey:'ledgerine_edit_invoice',
+  title:'Daftar Invoice', subtitle:'Invoice tersimpan di Google Sheets',
+  newLabel:'Invoice Baru', editorPage:'invoices.html', editKey:'ledgerine_edit_invoice',
   columns:[
     {key:'nomor',label:'Nomor'},
     {label:'Pelanggan',render:r=>{ try{ return esc(JSON.parse(r.customerSnapshot||'{}').nama||'-'); }catch(e){ return '-'; } }},

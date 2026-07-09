@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bank · Ledgerine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/crud.js"></script>
+<script>
+crudPage({
+  active:'banks.html', sheet:'Banks',
+  title:'Master Bank', subtitle:'Rekening tujuan untuk metode bayar transfer',
+  addLabel:'Tambah Bank', editLabel:'Ubah Bank', nameKey:'namaBank',
+  createdMsg:'Bank ditambahkan', savedMsg:'Bank diperbarui',
+  fields:[
+    {key:'namaBank',label:'Nama Bank',ph:'contoh: BRI'},
+    {key:'nomorRekening',label:'Nomor Rekening',ph:'0000-0000-0000'},
+    {key:'atasNama',label:'Atas Nama',ph:'CV Vidya Amaliah'},
+    {key:'cabang',label:'Cabang (opsional)',ph:'contoh: KC Gorontalo'}
+  ],
+  columns:[
+    {key:'namaBank',label:'Bank'},
+    {key:'nomorRekening',label:'No. Rekening'},
+    {key:'atasNama',label:'Atas Nama'},
+    {key:'cabang',label:'Cabang'}
+  ],
+  validate:(d)=>{ if(!d.namaBank) return 'Nama bank wajib diisi'; if(!d.nomorRekening) return 'Nomor rekening wajib diisi'; if(!d.atasNama) return 'Atas nama wajib diisi'; return null; },
+  beforeCreate:(d)=>{ d.createdAt=new Date().toISOString(); },
+  sortBy:(a,b)=>String(a.namaBank).localeCompare(b.namaBank)
+});
+</script>
+</body>
+</html>

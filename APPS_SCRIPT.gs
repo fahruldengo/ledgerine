@@ -22,8 +22,9 @@ var SHEETS = {
   Users:     ['id','username','password','nama','role','aktif'],
   Customers: ['id','nama','alamat','telepon','email','createdAt'],
   Products:  ['id','nama','satuan','harga','createdAt'],
-  Invoices:  ['id','nomor','tanggal','jatuhTempo','mataUang','customerId','customerSnapshot','sellerSnapshot','items','ppn','subtotal','total','status','catatan','logo','createdBy','createdAt'],
-  Receipts:  ['id','nomor','tanggal','mataUang','customerId','customerSnapshot','sellerSnapshot','sudahTerima','untukPembayaran','jumlah','terbilang','invoiceRef','logo','createdBy','createdAt']
+  Banks:     ['id','namaBank','nomorRekening','atasNama','cabang','createdAt'],
+  Invoices:  ['id','nomor','tanggal','jatuhTempo','mataUang','customerId','customerSnapshot','sellerSnapshot','items','ppn','subtotal','total','status','catatan','metodeBayar','bankId','bankSnapshot','ttdNama','ttdJabatan','tempat','logo','createdBy','createdAt'],
+  Receipts:  ['id','nomor','tanggal','mataUang','customerId','customerSnapshot','sellerSnapshot','sudahTerima','untukPembayaran','items','ppn','subtotal','jumlah','terbilang','invoiceRef','invoiceId','metodeBayar','bankId','bankSnapshot','ttdNama','ttdJabatan','tempat','catatan','logo','createdBy','createdAt']
 };
 
 function setup() {
