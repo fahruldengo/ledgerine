@@ -45,6 +45,16 @@ const Fmt = {
     }
     return 'Rp ' + Math.round(n).toLocaleString('id-ID');
   },
+  // format accounting (Excel-style): simbol kiri, angka kanan, sejajar dalam sel
+  acc(n, cur='IDR'){
+    n = Number(n)||0;
+    const sym = cur==='USD' ? '$' : 'Rp';
+    const num = cur==='USD'
+      ? Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+      : Math.round(Math.abs(n)).toLocaleString('id-ID');
+    const val = n<0 ? '('+num+')' : num;
+    return `<span class="acc"><span class="acc-sym">${sym}</span><span class="acc-num">${val}</span></span>`;
+  },
   number(n){ return (Math.round((Number(n)||0)*100)/100).toLocaleString('id-ID'); },
   date(d){
     if(!d) return '-';

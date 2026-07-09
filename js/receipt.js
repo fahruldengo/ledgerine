@@ -11,6 +11,7 @@
     lines:[],            // {invoiceId, invoiceNomor, desc, nilai}
     catatan:'', ttdNama:'', ttdJabatan:'', tempat:'Gorontalo',
     metodeBayar:'Transfer', bankId:'', bank:null,
+    pdfQuality: (localStorage.getItem('ledgerine_pdfq')||'hd'),
     editId:null
   };
 
@@ -158,6 +159,20 @@
           <input class="field" data-b="ttdJabatan" value="${esc(state.ttdJabatan)}" placeholder="contoh: Direktur"></div>
       </div>
 
+      <div class="ed-section">
+        <div class="sec-title">Kualitas PDF</div>
+        <div class="pdf-qual">
+          <label class="qual-opt ${state.pdfQuality==='normal'?'on':''}">
+            <input type="radio" name="pdfq" value="normal" ${state.pdfQuality==='normal'?'checked':''}>
+            <span><strong>Normal</strong><span class="qd">File kecil, cepat</span></span>
+          </label>
+          <label class="qual-opt ${state.pdfQuality==='hd'?'on':''}">
+            <input type="radio" name="pdfq" value="hd" ${state.pdfQuality==='hd'?'checked':''}>
+            <span><strong>HD</strong><span class="qd">Tajam, file lebih besar</span></span>
+          </label>
+        </div>
+      </div>
+
       <button class="btn btn-primary btn-block" id="pdfBtn" style="padding:12px">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         Download PDF
@@ -217,6 +232,11 @@
     editor.querySelector('#saveSeller').onclick=()=>{ localStorage.setItem('ledgerine_seller',JSON.stringify(state.seller)); toast('Info penjual disimpan'); };
     editor.querySelector('#addLine').onclick=()=>{ state.lines.push({invoiceId:'',invoiceNomor:'',desc:'',nilai:0}); buildLines(); render(); };
     editor.querySelector('#pdfBtn').onclick=exportPDF;
+    editor.querySelectorAll('input[name="pdfq"]').forEach(r=>r.addEventListener('change',()=>{
+      if(r.checked){ state.pdfQuality=r.value; localStorage.setItem('ledgerine_pdfq',r.value);
+        editor.querySelectorAll('.qual-opt').forEach(o=>o.classList.remove('on'));
+        r.closest('.qual-opt').classList.add('on'); }
+    }));
 
     const mSel=editor.querySelector('[data-b="metodeBayar"]');
     mSel.addEventListener('change',()=>{
@@ -305,7 +325,7 @@
     const rows=active.length?active.map(l=>`
       <tr>
         <td class="it-desc">${esc(l.desc|| (l.invoiceNomor?('Pelunasan '+l.invoiceNomor):'—'))}</td>
-        <td class="r">${Fmt.currency(l.nilai,cur)}</td>
+        <td class="r">${Fmt.acc(l.nilai,cur)}</td>
       </tr>`).join('')
       :`<tr><td colspan="2" style="text-align:center;color:#bbb;padding:26px">Belum ada item</td></tr>`;
 
@@ -351,7 +371,7 @@
           ${paymentBlock()}
         </div>
         <div class="doc-summary">
-          <div class="sum-total stack"><span>Total Pembayaran</span><span>${Fmt.currency(total,cur)}</span></div>
+          <div class="sum-total"><span>Total Pembayaran</span><span>${Fmt.acc(total,cur)}</span></div>
         </div>
       </div>
 
@@ -365,14 +385,16 @@
     const btn=editor.querySelector('#pdfBtn'), el=document.getElementById('a4sheet'), orig=btn.innerHTML;
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Generating PDF...';
     try{
-      const scale = Math.min(3, (window.devicePixelRatio||1) * 2.5);
+      const scale = state.pdfQuality==='hd' ? Math.min(3,(window.devicePixelRatio||1)*2.5) : 1.5;
       const canvas=await html2canvas(el,{scale:scale,useCORS:true,backgroundColor:'#ffffff',
         logging:false, imageTimeout:0, letterRendering:true});
-      const img=canvas.toDataURL('image/png');
+      const hd = state.pdfQuality==='hd';
+      const fmt = hd ? 'PNG' : 'JPEG';
+      const img = hd ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg',0.92);
       const { jsPDF }=window.jspdf; const pdf=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
       const pw=210, ph=297, iw=pw, ih=canvas.height*pw/canvas.width;
-      let left=ih, pos=0; pdf.addImage(img,'PNG',0,pos,iw,ih,undefined,'FAST'); left-=ph;
-      while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,'PNG',0,pos,iw,ih,undefined,'FAST'); left-=ph; }
+      let left=ih, pos=0; pdf.addImage(img,fmt,0,pos,iw,ih,undefined,'FAST'); left-=ph;
+      while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,fmt,0,pos,iw,ih,undefined,'FAST'); left-=ph; }
       pdf.save((state.nomor||'kwitansi').replace(/[\/\\]/g,'-')+'.pdf');
       btn.innerHTML='Downloaded ✓'; setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },1800);
     }catch(e){ toast('Gagal membuat PDF. Coba lagi.','err'); btn.innerHTML=orig; btn.disabled=false; }
