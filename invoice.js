@@ -292,10 +292,11 @@
     const cur=state.mataUang;
     const rows = active.length? active.map(it=>`
       <tr>
-        <td class="it-desc">${esc(it.desc||'—')}${(Number(it.qty)||0)!==1?`<span style="color:#888;font-weight:400"> × ${Fmt.number(it.qty)}</span>`:''}${it.disc?`<span style="color:#888;font-weight:400"> (disc ${Fmt.number(it.disc)}%)</span>`:''}</td>
+        <td class="it-desc">${esc(it.desc||'—')}${it.disc?`<span style="color:#888;font-weight:400"> (disc ${Fmt.number(it.disc)}%)</span>`:''}</td>
+        <td class="c">${Fmt.number(it.qty)}</td>
         <td class="r">${Fmt.currency(lineTotal(it),cur)}</td>
       </tr>`).join('')
-      : `<tr><td colspan="2" style="text-align:center;color:#bbb;padding:26px">Belum ada item</td></tr>`;
+      : `<tr><td colspan="3" style="text-align:center;color:#bbb;padding:26px">Belum ada item</td></tr>`;
 
     const statusBadge = state.status==='PAID'
       ? `<span class="doc-status st-paid">● LUNAS</span>`
@@ -336,7 +337,7 @@
       </div>
 
       <table class="doc-items">
-        <thead><tr><th>Deskripsi</th><th class="r">Jumlah</th></tr></thead>
+        <thead><tr><th>Deskripsi</th><th class="c">Qty</th><th class="r">Jumlah</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
 
@@ -377,7 +378,7 @@
     if(!state.ttdNama && !state.ttdJabatan) return '';
     return `<div class="doc-sign"><div class="box">
         <div class="place">${esc(state.tempat||'')}, ${Fmt.date(state.tanggal)}</div>
-        <div class="sign-space">( ruang tanda tangan )</div>
+        <div class="sign-space"></div>
         <div class="name">${esc(state.ttdNama||'—')}</div>
         ${state.ttdJabatan?`<div class="job">${esc(state.ttdJabatan)}</div>`:''}
       </div></div>`;
