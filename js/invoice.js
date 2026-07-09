@@ -11,11 +11,13 @@
     customerId:'', customer:{nama:'',alamat:'',telepon:'',email:''},
     items:[ blankItem() ],
     ppn:11, status:'UNPAID', catatan:'Pembayaran melalui transfer bank. Terima kasih atas kepercayaan Anda.',
+    ttdNama:'', ttdJabatan:'', tempat:'Gorontalo',
+    metodeBayar:'Transfer', bankId:'', bank:null,
     editId:null
   };
   function blankItem(){ return {desc:'',qty:1,harga:0,disc:0}; }
 
-  let customers=[], products=[], savedSeller=null;
+  let customers=[], products=[], savedSeller=null, banks=[];
 
   // due date default = tanggal + 14
   function defaultDue(){
@@ -33,9 +35,9 @@
 
   content.innerHTML = `
     <div class="page-head">
-      <div><h1 id="ttl">Faktur Baru</h1><div class="sub">Isi di kiri — pratinjau memperbarui otomatis</div></div>
+      <div><h1 id="ttl">Invoice Baru</h1><div class="sub">Isi di kiri — pratinjau memperbarui otomatis</div></div>
       <div class="flex gap">
-        <button class="btn" id="listBtn">Daftar Faktur</button>
+        <button class="btn" id="listBtn">Daftar Invoice</button>
         <button class="btn btn-primary" id="saveBtn">Simpan ke Sheets</button>
       </div>
     </div>
@@ -60,8 +62,8 @@
       </div>
 
       <div class="ed-section">
-        <div class="sec-title">Detail Faktur</div>
-        <div class="ed-row"><label class="label">Nomor Faktur</label>
+        <div class="sec-title">Detail Invoice</div>
+        <div class="ed-row"><label class="label">Nomor Invoice</label>
           <input class="field" data-b="nomor" value="${esc(state.nomor)}"></div>
         <div class="grid-2">
           <div class="ed-row"><label class="label">Mata Uang</label>
@@ -76,7 +78,7 @@
             </select></div>
         </div>
         <div class="grid-2">
-          <div class="ed-row"><label class="label">Tanggal Faktur</label>
+          <div class="ed-row"><label class="label">Tanggal Invoice</label>
             <input type="date" class="field" data-b="tanggal" value="${state.tanggal}"></div>
           <div class="ed-row"><label class="label">Jatuh Tempo</label>
             <input type="date" class="field" data-b="jatuhTempo" value="${state.jatuhTempo}"></div>
@@ -130,8 +132,36 @@
       </div>
 
       <div class="ed-section">
+        <div class="sec-title">Metode Bayar</div>
+        <div class="ed-row"><label class="label">Metode</label>
+          <select class="field" data-b="metodeBayar">
+            <option value="Transfer" ${state.metodeBayar==='Transfer'?'selected':''}>Transfer</option>
+            <option value="Tunai" ${state.metodeBayar==='Tunai'?'selected':''}>Tunai</option>
+            <option value="QRIS" ${state.metodeBayar==='QRIS'?'selected':''}>QRIS</option>
+          </select></div>
+        <div class="ed-row" id="bankRow" style="${state.metodeBayar==='Transfer'?'':'display:none'}">
+          <label class="label">Rekening Tujuan</label>
+          <select class="field" id="bankSelect">
+            <option value="">— pilih bank —</option>
+            ${banks.map(b=>`<option value="${b.id}" ${String(state.bankId)===String(b.id)?'selected':''}>${esc(b.namaBank)} · ${esc(b.nomorRekening)} (${esc(b.atasNama)})</option>`).join('')}
+          </select>
+          ${banks.length?'':'<div class="muted" style="font-size:11.5px;margin-top:6px">Belum ada bank. Tambahkan di menu Bank.</div>'}
+        </div>
+      </div>
+
+      <div class="ed-section">
         <div class="sec-title">Catatan</div>
         <div class="ed-row"><textarea class="field" data-b="catatan" style="min-height:80px">${esc(state.catatan)}</textarea></div>
+      </div>
+
+      <div class="ed-section">
+        <div class="sec-title">Tanda Tangan Pejabat</div>
+        <div class="ed-row"><label class="label">Tempat</label>
+          <input class="field" data-b="tempat" value="${esc(state.tempat)}" placeholder="Gorontalo"></div>
+        <div class="ed-row"><label class="label">Nama Pejabat</label>
+          <input class="field" data-b="ttdNama" value="${esc(state.ttdNama)}" placeholder="Nama penanda tangan"></div>
+        <div class="ed-row"><label class="label">Jabatan</label>
+          <input class="field" data-b="ttdJabatan" value="${esc(state.ttdJabatan)}" placeholder="contoh: Direktur"></div>
       </div>
 
       <button class="btn btn-primary btn-block" id="pdfBtn" style="padding:12px">
@@ -183,6 +213,21 @@
     editor.querySelector('#saveSeller').onclick=saveSeller;
     editor.querySelector('#addLine').onclick=()=>{ state.items.push(blankItem()); buildLineItems(); render(); };
     editor.querySelector('#pdfBtn').onclick=exportPDF;
+
+    // metode bayar → toggle bank row
+    const mSel=editor.querySelector('[data-b="metodeBayar"]');
+    mSel.addEventListener('change',()=>{
+      state.metodeBayar=mSel.value;
+      const row=editor.querySelector('#bankRow');
+      if(row) row.style.display = state.metodeBayar==='Transfer' ? '' : 'none';
+      if(state.metodeBayar!=='Transfer'){ state.bankId=''; state.bank=null; }
+      render();
+    });
+    const bSel=editor.querySelector('#bankSelect');
+    if(bSel) bSel.onchange=()=>{
+      const b=banks.find(x=>String(x.id)===bSel.value);
+      state.bankId=b?b.id:''; state.bank=b||null; render();
+    };
   }
 
   function buildLineItems(){
@@ -250,7 +295,7 @@
       <div class="doc-top">
         <div>${logoHtml}</div>
         <div class="doc-title-block">
-          <div class="doc-title">FAKTUR</div>
+          <div class="doc-title">INVOICE</div>
           <div class="doc-number">${esc(state.nomor||'—')}</div>
           <div>${statusBadge}</div>
         </div>
@@ -284,6 +329,7 @@
         <div class="doc-notes">
           ${state.catatan?`<div class="cap">Catatan</div><div>${esc(state.catatan).replace(/\n/g,'<br>')}</div>`:''}
           <div class="terbilang">Terbilang: ${terbilangRupiah(total,cur)}</div>
+          ${paymentBlock()}
         </div>
         <div class="doc-summary">
           <div class="sum-row sub"><span>Subtotal</span><span>${Fmt.currency(subtotal,cur)}</span></div>
@@ -292,8 +338,33 @@
         </div>
       </div>
 
-      <div class="doc-foot"><div class="line">Faktur ini dibuat secara elektronik dan sah tanpa tanda tangan basah.</div></div>
+      ${signatureBlock()}
+
+      <div class="doc-foot"><div class="line">Invoice ini diterbitkan oleh ${esc(state.seller.nama||'perusahaan')} dan sah sebagai dokumen tagihan.</div></div>
     </div>`;
+  }
+
+  function paymentBlock(){
+    const m=state.metodeBayar||'';
+    if(!m) return '';
+    let inner=`<div class="pay-method">${esc(m)}</div>`;
+    if(m==='Transfer' && state.bank){
+      inner+=`<div class="bank-card">
+        <div class="bn">${esc(state.bank.namaBank)}${state.bank.cabang?' — '+esc(state.bank.cabang):''}</div>
+        <div class="br">${esc(state.bank.nomorRekening)}</div>
+        <div class="an">a.n. ${esc(state.bank.atasNama)}</div>
+      </div>`;
+    }
+    return `<div class="doc-pay"><div class="cap">Metode Pembayaran</div>${inner}</div>`;
+  }
+
+  function signatureBlock(){
+    if(!state.ttdNama && !state.ttdJabatan) return '';
+    return `<div class="doc-sign"><div class="box">
+        <div class="place">${esc(state.tempat||'')}, ${Fmt.date(state.tanggal)}</div>
+        <div class="name">${esc(state.ttdNama||'—')}</div>
+        ${state.ttdJabatan?`<div class="job">${esc(state.ttdJabatan)}</div>`:''}
+      </div></div>`;
   }
 
   // ---------- save customer / seller ----------
@@ -328,7 +399,7 @@
       pdf.addImage(img,'JPEG',0,pos,iw,ih);
       left-=ph;
       while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,'JPEG',0,pos,iw,ih); left-=ph; }
-      pdf.save((state.nomor||'faktur').replace(/[\/\\]/g,'-')+'.pdf');
+      pdf.save((state.nomor||'invoice').replace(/[\/\\]/g,'-')+'.pdf');
       btn.innerHTML='Downloaded ✓';
       setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },1800);
     }catch(e){
@@ -339,7 +410,9 @@
 
   // ---------- save to sheets ----------
   content.querySelector('#saveBtn').onclick=async ()=>{
-    if(!state.nomor){ toast('Nomor faktur wajib diisi','err'); return; }
+    if(!state.nomor){ toast('Nomor invoice wajib diisi','err'); return; }
+    if(!state.metodeBayar){ toast('Pilih metode bayar','err'); return; }
+    if(state.metodeBayar==='Transfer' && !state.bankId){ toast('Pilih rekening bank tujuan','err'); return; }
     const {subtotal,total}=calc();
     const btn=content.querySelector('#saveBtn');
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Menyimpan...';
@@ -348,12 +421,15 @@
       customerId:state.customerId, customerSnapshot:JSON.stringify(state.customer),
       sellerSnapshot:JSON.stringify(state.seller), items:JSON.stringify(state.items),
       ppn:state.ppn, subtotal:Math.round(subtotal), total:Math.round(total),
-      status:state.status, catatan:state.catatan, logo:state.logo,
-      createdBy:user.username
+      status:state.status, catatan:state.catatan,
+      metodeBayar:state.metodeBayar, bankId:state.bankId,
+      bankSnapshot:state.bank?JSON.stringify(state.bank):'',
+      ttdNama:state.ttdNama, ttdJabatan:state.ttdJabatan, tempat:state.tempat,
+      logo:state.logo, createdBy:user.username
     };
     try{
-      if(state.editId){ payload.id=state.editId; await API.update('Invoices',payload); toast('Faktur diperbarui'); }
-      else{ payload.createdAt=new Date().toISOString(); const r=await API.create('Invoices',payload); state.editId=r.data.id; toast('Faktur disimpan ke Sheets'); }
+      if(state.editId){ payload.id=state.editId; await API.update('Invoices',payload); toast('Invoice diperbarui'); }
+      else{ payload.createdAt=new Date().toISOString(); const r=await API.create('Invoices',payload); state.editId=r.data.id; toast('Invoice disimpan ke Sheets'); }
     }catch(e){ toast(e.message,'err'); }
     finally{ btn.disabled=false; btn.innerHTML='Simpan ke Sheets'; }
   };
@@ -375,7 +451,10 @@
       state.items=inv.items?JSON.parse(inv.items):[blankItem()];
       state.ppn=Number(inv.ppn)||0; state.status=inv.status||'UNPAID';
       state.catatan=inv.catatan||''; state.logo=inv.logo||'';
-      content.querySelector('#ttl').textContent='Ubah Faktur';
+      state.ttdNama=inv.ttdNama||''; state.ttdJabatan=inv.ttdJabatan||''; state.tempat=inv.tempat||'Gorontalo';
+      state.metodeBayar=inv.metodeBayar||'Transfer'; state.bankId=inv.bankId||'';
+      state.bank=inv.bankSnapshot?JSON.parse(inv.bankSnapshot):null;
+      content.querySelector('#ttl').textContent='Ubah Invoice';
       return true;
     }catch(e){ return false; }
   }
@@ -386,8 +465,10 @@
     if(s){ try{ state.seller=JSON.parse(s); }catch(e){} }
     const isEdit=loadEditFromStorage();
     try{
-      const [c,inv]=await Promise.all([API.list('Customers'),API.list('Invoices')]);
+      const [c,inv,bk]=await Promise.all([API.list('Customers'),API.list('Invoices'),API.list('Banks')]);
       customers=(c.rows||[]).filter(x=>x.id);
+      banks=(bk.rows||[]).filter(x=>x.id);
+      if(state.bankId && !state.bank) state.bank=banks.find(b=>String(b.id)===String(state.bankId))||null;
       if(!isEdit) state.nomor=nextNumber((inv.rows||[]).filter(x=>x.id));
     }catch(e){ toast(e.message,'err'); }
     buildEditor(); render();
