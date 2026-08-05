@@ -212,7 +212,7 @@
       const f=input.files[0]; if(!f) return;
       if(!f.type.startsWith('image/')){ toast('File harus berupa gambar','err'); input.value=''; return; }
       const r=new FileReader();
-      r.onload=()=>{ state.logo=r.result; buildEditor(); render(); toast('Logo diunggah'); };
+      r.onload=async ()=>{ state.logo=await compressImage(r.result); buildEditor(); render(); toast('Logo diunggah'); };
       r.readAsDataURL(f);
     };
     const rm=editor.querySelector('#rmLogo'); if(rm) rm.onclick=()=>{ state.logo=''; buildEditor(); render(); };
