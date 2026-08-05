@@ -109,16 +109,29 @@ const Fmt = {
     return `<span class="acc"><span class="acc-sym">${sym}</span><span class="acc-num">${val}</span></span>`;
   },
   number(n){ return (Math.round((Number(n)||0)*100)/100).toLocaleString('id-ID'); },
+  // Tanggal disimpan/diproses sebagai YYYY-MM-DD lokal (tanpa konversi UTC)
+  // agar tidak mundur 1 hari di zona waktu UTC+ (mis. WITA/WIB).
+  _localYMD(d){
+    // ambil komponen tanggal LOKAL, bukan UTC
+    const p=(n)=>String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+  },
   date(d){
     if(!d) return '-';
-    const x = new Date(d);
+    // kalau sudah format YYYY-MM-DD, parse sebagai tanggal lokal (hindari UTC shift)
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
+    const x = m ? new Date(+m[1], +m[2]-1, +m[3]) : new Date(d);
     if(isNaN(x)) return d;
     return x.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
   },
   dateInput(d){
-    const x = d?new Date(d):new Date();
+    if(!d) return this._localYMD(new Date());
+    // string YYYY-MM-DD: pakai apa adanya (jangan lewat Date → UTC)
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
+    if(m) return m[1]+'-'+m[2]+'-'+m[3];
+    const x = new Date(d);
     if(isNaN(x)) return '';
-    return x.toISOString().slice(0,10);
+    return this._localYMD(x);
   }
 };
 
