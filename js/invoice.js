@@ -365,7 +365,6 @@
         <div class="doc-notes">
           ${state.catatan?`<div class="cap">Catatan</div><div>${esc(state.catatan).replace(/\n/g,'<br>')}</div>`:''}
           <div class="terbilang">Terbilang: ${terbilangRupiah(total,cur)}</div>
-          ${paymentBlock()}
         </div>
         <div class="doc-summary">
           <div class="sum-row sub"><span>DPP (HPP)</span><span>${Fmt.acc(dpp,cur)}</span></div>
@@ -374,7 +373,10 @@
         </div>
       </div>
 
-      ${signatureBlock()}
+      <div class="doc-payrow">
+        <div class="pay-col">${paymentBlock()}</div>
+        <div class="sign-col">${signatureBlock()}</div>
+      </div>
 
       <div class="doc-foot"><div class="line">Invoice ini diterbitkan oleh ${esc(state.seller.nama||'perusahaan')} dan sah sebagai dokumen tagihan.</div></div>
     </div>`;
