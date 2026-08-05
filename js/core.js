@@ -1,12 +1,21 @@
 /* ===== LEDGERINE core.js — shared utilities ===== */
 
-/* ---------- API (GET-only, JSON param → hindari CORS preflight) ---------- */
+/* ---------- API ----------
+   - Baca (login, list): GET dengan query string → cepat, bebas CORS preflight.
+   - Tulis (create, update): POST text/plain → tidak kena batas panjang URL
+     (penting untuk logo base64 yang besar). text/plain = "simple request",
+     jadi tetap bebas CORS preflight. */
 const API = {
-  async call(action, payload = {}) {
+  _checkUrl(){
     const url = CONFIG.API_URL;
     if (!url || url.includes('PASTE_YOUR')) {
       throw new Error('API_URL belum diisi. Edit js/config.js di GitHub.');
     }
+    return url;
+  },
+  // GET (baca / operasi kecil)
+  async call(action, payload = {}) {
+    const url = this._checkUrl();
     const qs = 'action=' + encodeURIComponent(action) +
                '&payload=' + encodeURIComponent(JSON.stringify(payload));
     const res = await fetch(url + '?' + qs, { method:'GET', redirect:'follow' });
@@ -15,12 +24,56 @@ const API = {
     if (!data.ok) throw new Error(data.error || 'Permintaan gagal');
     return data;
   },
+  // POST (tulis data besar — hindari batas panjang URL)
+  async post(action, payload = {}) {
+    const url = this._checkUrl();
+    let res;
+    try{
+      res = await fetch(url, {
+        method:'POST', redirect:'follow',
+        headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, payload })
+      });
+    }catch(err){
+      throw new Error('Gagal terhubung ke server (cek koneksi internet & deployment Apps Script).');
+    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Permintaan gagal');
+    return data;
+  },
   login:  (username,password) => API.call('login',{username,password}),
   list:   (sheet)             => API.call('list',{sheet}),
-  create: (sheet,data)        => API.call('create',{sheet,data}),
-  update: (sheet,data)        => API.call('update',{sheet,data}),
+  create: (sheet,data)        => API.post('create',{sheet,data}),
+  update: (sheet,data)        => API.post('update',{sheet,data}),
   remove: (sheet,id)          => API.call('delete',{sheet,id})
 };
+
+/* ---------- Kompres gambar logo (resize + JPEG) agar hemat ukuran ----------
+   Mengurangi base64 dari ratusan KB jadi puluhan KB. Dipakai sebelum simpan. */
+function compressImage(dataUrl, maxDim = 480, quality = 0.85){
+  return new Promise((resolve)=>{
+    try{
+      const img = new Image();
+      img.onload = ()=>{
+        let { width:w, height:h } = img;
+        if (w > maxDim || h > maxDim){
+          if (w >= h){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        // latar putih supaya PNG transparan tidak jadi hitam saat diubah ke JPEG
+        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = ()=>resolve(dataUrl); // gagal → pakai asli
+      img.src = dataUrl;
+    }catch(e){ resolve(dataUrl); }
+  });
+}
 
 /* ---------- Auth ---------- */
 const Auth = {
