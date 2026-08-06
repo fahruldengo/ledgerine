@@ -429,8 +429,13 @@
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Generating PDF...';
     try{
       const scale = state.pdfQuality==='hd' ? Math.min(3,(window.devicePixelRatio||1)*2.5) : 1.5;
+      // lepas min-height sementara agar canvas hanya setinggi konten asli
+      // (mencegah halaman ke-2 kosong saat isi sedikit)
+      const prevMinH = el.style.minHeight;
+      el.style.minHeight = 'auto';
       const canvas=await html2canvas(el,{scale:scale,useCORS:true,backgroundColor:'#ffffff',
         logging:false, imageTimeout:0, letterRendering:true});
+      el.style.minHeight = prevMinH; // kembalikan tampilan layar
       const hd = state.pdfQuality==='hd';
       const fmt = hd ? 'PNG' : 'JPEG';
       const img = hd ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg',0.92);
@@ -438,14 +443,16 @@
       const pdf=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
       const pw=210, ph=297;
       const iw=pw, ih=canvas.height*pw/canvas.width;
+      const EPS = 2; // toleransi 2mm agar overflow kecil tidak bikin halaman kosong
       let left=ih, pos=0;
       pdf.addImage(img,fmt,0,pos,iw,ih,undefined,'FAST');
       left-=ph;
-      while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,fmt,0,pos,iw,ih,undefined,'FAST'); left-=ph; }
+      while(left>EPS){ pos=left-ih; pdf.addPage(); pdf.addImage(img,fmt,0,pos,iw,ih,undefined,'FAST'); left-=ph; }
       pdf.save((state.nomor||'invoice').replace(/[\/\\]/g,'-')+'.pdf');
       btn.innerHTML='Downloaded ✓';
       setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },1800);
     }catch(e){
+      el.style.minHeight = '';
       toast('Gagal membuat PDF. Coba lagi.','err');
       btn.innerHTML=orig; btn.disabled=false;
     }
