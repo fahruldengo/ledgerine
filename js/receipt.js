@@ -388,18 +388,22 @@
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Generating PDF...';
     try{
       const scale = state.pdfQuality==='hd' ? Math.min(3,(window.devicePixelRatio||1)*2.5) : 1.5;
+      const prevMinH = el.style.minHeight;
+      el.style.minHeight = 'auto'; // hanya setinggi konten, cegah halaman ke-2 kosong
       const canvas=await html2canvas(el,{scale:scale,useCORS:true,backgroundColor:'#ffffff',
         logging:false, imageTimeout:0, letterRendering:true});
+      el.style.minHeight = prevMinH;
       const hd = state.pdfQuality==='hd';
       const fmt = hd ? 'PNG' : 'JPEG';
       const img = hd ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg',0.92);
       const { jsPDF }=window.jspdf; const pdf=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
       const pw=210, ph=297, iw=pw, ih=canvas.height*pw/canvas.width;
+      const EPS = 2;
       let left=ih, pos=0; pdf.addImage(img,fmt,0,pos,iw,ih,undefined,'FAST'); left-=ph;
-      while(left>0){ pos=left-ih; pdf.addPage(); pdf.addImage(img,fmt,0,pos,iw,ih,undefined,'FAST'); left-=ph; }
+      while(left>EPS){ pos=left-ih; pdf.addPage(); pdf.addImage(img,fmt,0,pos,iw,ih,undefined,'FAST'); left-=ph; }
       pdf.save((state.nomor||'kwitansi').replace(/[\/\\]/g,'-')+'.pdf');
       btn.innerHTML='Downloaded ✓'; setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },1800);
-    }catch(e){ toast('Gagal membuat PDF. Coba lagi.','err'); btn.innerHTML=orig; btn.disabled=false; }
+    }catch(e){ el.style.minHeight=''; toast('Gagal membuat PDF. Coba lagi.','err'); btn.innerHTML=orig; btn.disabled=false; }
   }
 
   content.querySelector('#saveBtn').onclick=async ()=>{
