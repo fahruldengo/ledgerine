@@ -122,7 +122,9 @@ const Fmt = {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
     const x = m ? new Date(+m[1], +m[2]-1, +m[3]) : new Date(d);
     if(isNaN(x)) return d;
-    return x.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli',
+                   'Agustus','September','Oktober','November','Desember'];
+    return x.getDate() + ' ' + bulan[x.getMonth()] + ' ' + x.getFullYear();
   },
   dateInput(d){
     if(!d) return this._localYMD(new Date());
