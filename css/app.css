@@ -91,6 +91,22 @@ select.field{cursor:pointer;appearance:none;
 .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .page-head .sub{color:var(--muted);font-size:13px;margin-top:2px}
 
+/* filter bar */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-field{position:relative;flex:1;min-width:200px;max-width:360px}
+.search-field svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search-field .field{padding-left:36px}
+.filter-sel{width:auto;min-width:140px;flex-shrink:0}
+.filter-count{font-size:12.5px;white-space:nowrap;margin-left:auto}
+.btn-icon{padding:6px 9px}
+.btn-icon svg{display:block}
+@media(max-width:640px){
+  .filter-bar{flex-direction:column;align-items:stretch}
+  .search-field{max-width:none}
+  .filter-sel{width:100%}
+  .filter-count{margin-left:0}
+}
+
 /* ---- Table ---- */
 .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
 table.data{width:100%;border-collapse:collapse;font-size:13.5px}
