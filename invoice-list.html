@@ -5,14 +5,18 @@
 <title>Daftar Invoice · Ledgerine</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/doc.css">
 </head>
 <body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/core.js"></script>
+<script src="js/docrender.js"></script>
 <script src="js/doclist.js"></script>
 <script>
 docListPage({
-  active:'invoices.html', sheet:'Invoices',
+  active:'invoices.html', sheet:'Invoices', docType:'invoice',
   title:'Daftar Invoice', subtitle:'Invoice tersimpan di Google Sheets',
   newLabel:'Invoice Baru', editorPage:'invoices.html', editKey:'ledgerine_edit_invoice',
   columns:[
