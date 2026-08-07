@@ -13,6 +13,13 @@ function crudPage(cfg){
         ${cfg.addLabel}
       </button>
     </div>
+    <div class="filter-bar">
+      <div class="search-field">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="field" id="searchBox" placeholder="Cari...">
+      </div>
+      <span class="filter-count muted" id="filterCount"></span>
+    </div>
     <div id="listArea"><div class="center-load"><span class="spinner dark"></span></div></div>
   `;
 
@@ -80,16 +87,35 @@ function crudPage(cfg){
     catch(e){ toast(e.message,'err'); }
   }
 
+  let searchTerm='';
+  function getFiltered(){
+    if(!searchTerm) return rows;
+    const q=searchTerm.toLowerCase();
+    return rows.filter(r=>{
+      // cari di semua nilai kolom + field yang ditentukan
+      return Object.values(r).some(v=>String(v==null?'':v).toLowerCase().includes(q));
+    });
+  }
+
   function renderList(){
     const area=content.querySelector('#listArea');
+    const filtered=getFiltered();
+    const countEl=content.querySelector('#filterCount');
+    if(countEl) countEl.textContent = searchTerm ? `${filtered.length} dari ${rows.length}` : `${rows.length} data`;
     if(!rows.length){
       area.innerHTML=`<div class="card empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h18v18H3zM3 9h18M9 21V9"/></svg>
         <div>Belum ada data. Klik "${cfg.addLabel}" untuk menambah.</div></div>`;
       return;
     }
+    if(!filtered.length){
+      area.innerHTML=`<div class="card empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <div>Tidak ada hasil untuk "${esc(searchTerm)}".</div></div>`;
+      return;
+    }
     const head=cfg.columns.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('');
-    const bodyRows=rows.map(r=>{
+    const bodyRows=filtered.map(r=>{
       const tds=cfg.columns.map(c=>{
         const v = c.render? c.render(r) : esc(r[c.key]??'');
         return `<td class="${c.right?'right mono':''}">${v}</td>`;
@@ -118,5 +144,7 @@ function crudPage(cfg){
   }
 
   content.querySelector('#addBtn').onclick=()=>openModal(null);
+  const sb=content.querySelector('#searchBox');
+  if(sb) sb.addEventListener('input',()=>{ searchTerm=sb.value.trim(); renderList(); });
   load();
 }
